@@ -20,6 +20,8 @@ export interface AiParticipant {
   isActive: boolean;
   rateLimitUsage: number;
   lastActive: string;
+  icon?: string; // 'bot' | 'cpu' | 'sparkles' | 'zap' | 'code' | 'terminal'
+  color?: string; // 'blue' | 'purple' | 'emerald' | 'orange' | 'rose' | 'amber' | 'indigo'
 }
 
 export interface Conversation {
@@ -51,6 +53,8 @@ const DEFAULT_PARTICIPANTS: AiParticipant[] = [
     isActive: true,
     rateLimitUsage: 0,
     lastActive: new Date().toISOString(),
+    icon: 'bot',
+    color: 'blue',
   },
   {
     id: 'default-groq',
@@ -64,6 +68,8 @@ const DEFAULT_PARTICIPANTS: AiParticipant[] = [
     isActive: true,
     rateLimitUsage: 0,
     lastActive: new Date().toISOString(),
+    icon: 'zap',
+    color: 'orange',
   },
 ];
 

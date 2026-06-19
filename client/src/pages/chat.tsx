@@ -39,12 +39,37 @@ export default function Chat() {
     duration: '0m 0s'
   });
   
-  const [settings, setSettings] = useState({
-    responseDelay: 3,
-    maxAutoRounds: 10,
-    handleRateLimits: true,
-    exportFormat: 'md'
+  const [settings, setSettings] = useState(() => {
+    const defaultSettings = {
+      responseDelay: 3,
+      maxAutoRounds: 10,
+      handleRateLimits: true,
+      exportFormat: 'md',
+      replyMode: 'sequential'
+    };
+    const saved = localStorage.getItem('ai_hub_global_settings');
+    if (saved) {
+      try {
+        return { ...defaultSettings, ...JSON.parse(saved) };
+      } catch (e) {
+        return defaultSettings;
+      }
+    }
+    return defaultSettings;
   });
+
+  const handleSettingsChange = (newSettings: typeof settings) => {
+    setSettings(newSettings);
+    localStorage.setItem('ai_hub_global_settings', JSON.stringify(newSettings));
+    
+    // Sync to active conversation in database
+    if (conversationId) {
+      storage.updateConversation(conversationId, {
+        responseDelay: newSettings.responseDelay,
+        maxAutoRounds: newSettings.maxAutoRounds,
+      });
+    }
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<Date>(new Date());
@@ -78,12 +103,7 @@ export default function Chat() {
     setMessages(storage.getMessages(conv.id));
     setAiParticipants(storage.getAiParticipants());
     
-    // Load setting overrides if any
-    setSettings(prev => ({
-      ...prev,
-      responseDelay: conv.responseDelay ?? prev.responseDelay,
-      maxAutoRounds: conv.maxAutoRounds ?? prev.maxAutoRounds,
-    }));
+
     setIsAutoMode(conv.isAutoMode ?? false);
     
     currentRoundsRef.current = conv.currentRounds || 0;
@@ -111,23 +131,80 @@ export default function Chat() {
     return () => clearInterval(interval);
   }, []);
 
-  // Orchestrator: Trigger all active AIs to respond in parallel (standard group chat behavior on user input)
+  // Orchestrator: Trigger all active AIs to respond (either sequentially or in parallel based on replyMode setting)
   const triggerAllAIResponses = async (currentConvId: string) => {
     const activeAIs = aiParticipantsRef.current.filter(p => p.isActive && p.status === 'online');
     if (activeAIs.length === 0) return;
 
-    // Call all AIs simultaneously
-    await Promise.all(
-      activeAIs.map(async (ai) => {
+    const isParallel = settingsRef.current.replyMode === 'parallel';
+    console.log("[Orchestrator] Triggering responses. Mode:", isParallel ? "Parallel" : "Sequential");
+
+    if (isParallel) {
+      // --- Parallel Response Mode (All AIs respond at once) ---
+      await Promise.all(
+        activeAIs.map(async (ai) => {
+          // Show typing indicator
+          setTypingAIs(prev => [...prev, ai.name]);
+
+          try {
+            const currentMessages = storage.getMessages(currentConvId);
+            const response = await aiOrchestrator.callAI(ai, currentMessages);
+            
+            // Remove typing indicator
+            setTypingAIs(prev => prev.filter(name => name !== ai.name));
+
+            if (response.error) {
+              if (response.error === 'rate_limited') {
+                storage.updateAiParticipant(ai.id, { status: 'rate_limited', rateLimitUsage: 100 });
+                setAiParticipants(storage.getAiParticipants());
+                toast({
+                  title: `${ai.name} Rate Limited`,
+                  description: 'The AI participant hit its rate limit and was paused.',
+                  variant: 'destructive',
+                });
+              } else {
+                toast({
+                  title: `${ai.name} Error`,
+                  description: response.error,
+                  variant: 'destructive',
+                });
+              }
+              return;
+            }
+
+            // Save and push AI message
+            if (response.content) {
+              const aiMsg = storage.createMessage({
+                content: response.content,
+                sender: ai.name,
+                conversationId: currentConvId
+              });
+              setMessages(prev => [...prev, aiMsg]);
+              setStats(prev => ({ ...prev, totalMessages: prev.totalMessages + 1 }));
+            }
+          } catch (error) {
+            setTypingAIs(prev => prev.filter(name => name !== ai.name));
+            console.error(error);
+          }
+        })
+      );
+    } else {
+      // --- Sequential Response Mode (One after the other) ---
+      for (let i = 0; i < activeAIs.length; i++) {
+        const ai = activeAIs[i];
+        
+        // If Auto Mode is turned on while this round is active, exit so Auto Mode can handle sequencing
+        if (isAutoModeRef.current) break;
+
         // Show typing indicator
-        setTypingAIs(prev => [...prev, ai.name]);
+        setTypingAIs([ai.name]);
 
         try {
           const currentMessages = storage.getMessages(currentConvId);
           const response = await aiOrchestrator.callAI(ai, currentMessages);
           
           // Remove typing indicator
-          setTypingAIs(prev => prev.filter(name => name !== ai.name));
+          setTypingAIs([]);
 
           if (response.error) {
             if (response.error === 'rate_limited') {
@@ -145,7 +222,7 @@ export default function Chat() {
                 variant: 'destructive',
               });
             }
-            return;
+            continue;
           }
 
           // Save and push AI message
@@ -157,13 +234,16 @@ export default function Chat() {
             });
             setMessages(prev => [...prev, aiMsg]);
             setStats(prev => ({ ...prev, totalMessages: prev.totalMessages + 1 }));
+
+            // Add a short delay (e.g. 500ms) for natural pacing before triggering the next model
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
         } catch (error) {
-          setTypingAIs(prev => prev.filter(name => name !== ai.name));
+          setTypingAIs([]);
           console.error(error);
         }
-      })
-    );
+      }
+    }
   };
 
   // Orchestrator: Trigger single AI response (round-robin style)
@@ -298,9 +378,10 @@ export default function Chat() {
     if (autoTimeoutRef.current) clearTimeout(autoTimeoutRef.current);
     
     // Reset round counters
+    isAutoModeRef.current = true;
+    setIsAutoMode(true);
     currentRoundsRef.current = 0;
     storage.updateConversation(conversationId, { isAutoMode: true, currentRounds: 0 });
-    setIsAutoMode(true);
     setStats(prev => ({ ...prev, autoRounds: 0 }));
 
     // Start immediately
@@ -309,13 +390,14 @@ export default function Chat() {
 
   const handleStopConversation = () => {
     if (autoTimeoutRef.current) clearTimeout(autoTimeoutRef.current);
+    isAutoModeRef.current = false;
     storage.updateConversation(conversationId, { isAutoMode: false });
     setIsAutoMode(false);
     setTypingAIs([]);
   };
 
   const handleSendOneMessage = () => {
-    triggerAIResponse(conversationId, true);
+    triggerAllAIResponses(conversationId);
   };
 
   const handleClearChat = () => {
@@ -462,7 +544,13 @@ export default function Chat() {
 
           {/* AI Status Panel */}
           <div className="flex-1 overflow-y-auto">
-            <AiStatusPanel participants={aiParticipants} />
+            <AiStatusPanel 
+              participants={aiParticipants} 
+              onReorder={(updated) => {
+                setAiParticipants(updated);
+                storage.saveAiParticipants(updated);
+              }}
+            />
           </div>
 
           {/* Control Buttons */}
@@ -648,7 +736,7 @@ export default function Chat() {
         participants={aiParticipants}
         onParticipantsChange={setAiParticipants}
         settings={settings}
-        onSettingsChange={setSettings}
+        onSettingsChange={handleSettingsChange}
       />
     </div>
   );

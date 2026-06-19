@@ -20,6 +20,7 @@ interface SettingsPanelProps {
     maxAutoRounds: number;
     handleRateLimits: boolean;
     exportFormat: string;
+    replyMode?: string;
   };
   onSettingsChange: (settings: any) => void;
 }
@@ -290,6 +291,51 @@ export function SettingsPanel({
                 />
               </div>
 
+              {/* Icon selection */}
+              <div>
+                <Label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase">Avatar Icon</Label>
+                <Select
+                  value={editingAi.icon || 'bot'}
+                  onValueChange={(val) => setEditingAi({ ...editingAi, icon: val })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bot">Bot (Assistant)</SelectItem>
+                    <SelectItem value="cpu">CPU (Processor)</SelectItem>
+                    <SelectItem value="sparkles">Sparkles (Creative)</SelectItem>
+                    <SelectItem value="zap">Lightning (Fast)</SelectItem>
+                    <SelectItem value="code">Code (Programmer)</SelectItem>
+                    <SelectItem value="terminal">Terminal (Technical)</SelectItem>
+                    <SelectItem value="smile">Smile (Friendly)</SelectItem>
+                    <SelectItem value="messagesquare">Bubble (Chatty)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Color selection */}
+              <div>
+                <Label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase">Theme Color</Label>
+                <Select
+                  value={editingAi.color || 'indigo'}
+                  onValueChange={(val) => setEditingAi({ ...editingAi, color: val })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="indigo">Indigo</SelectItem>
+                    <SelectItem value="blue">Blue</SelectItem>
+                    <SelectItem value="purple">Purple</SelectItem>
+                    <SelectItem value="emerald">Emerald</SelectItem>
+                    <SelectItem value="orange">Orange</SelectItem>
+                    <SelectItem value="rose">Rose</SelectItem>
+                    <SelectItem value="amber">Amber</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex space-x-3 pt-3">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setEditingAi(null)}>
@@ -406,7 +452,7 @@ export function SettingsPanel({
                   </div>
                 </div>
 
-                {/* Max Auto Rounds */}
+                 {/* Max Auto Rounds */}
                 <div className="space-y-1.5">
                   <Label className="block text-xs font-semibold text-gray-600 uppercase">Max Auto Rounds</Label>
                   <Select
@@ -424,6 +470,24 @@ export function SettingsPanel({
                       <SelectItem value="-1">Unlimited</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Reply Mode Toggle */}
+                <div className="space-y-1.5">
+                  <Label className="block text-xs font-semibold text-gray-600 uppercase">Group Chat Reply Mode</Label>
+                  <Select
+                    value={settings.replyMode || 'sequential'}
+                    onValueChange={(value) => onSettingsChange({ ...settings, replyMode: value })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sequential">Sequential (One after the other)</SelectItem>
+                      <SelectItem value="parallel">Parallel (All AIs respond at once)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-gray-400">Sequential mode lets AIs read each other's replies in real-time.</p>
                 </div>
 
                 {/* Rate Limit Checkbox */}
