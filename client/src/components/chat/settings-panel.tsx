@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Eye, EyeOff, Save, Plus, Edit2, Trash2, ArrowLeft, Bot, Sparkles, Cpu } from 'lucide-react';
+import { X, Eye, EyeOff, Save, Plus, Edit2, Trash2, ArrowLeft, Bot, Sparkles, Cpu, Download, Upload, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { AiParticipant, storage } from '@/lib/storage';
@@ -21,6 +21,8 @@ interface SettingsPanelProps {
     handleRateLimits: boolean;
     exportFormat: string;
     replyMode?: string;
+    contextLimit?: number;
+    creditSaver?: boolean;
   };
   onSettingsChange: (settings: any) => void;
 }
@@ -41,6 +43,8 @@ export function SettingsPanel({
 
   // Form errors
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [isScanning, setIsScanning] = useState(false);
 
   if (!isOpen) return null;
 
@@ -154,6 +158,142 @@ export function SettingsPanel({
       apiUrl: defaultUrl,
       model: defaultModel,
     }));
+  };
+
+  const handleScanOllama = async () => {
+    setIsScanning(true);
+    try {
+      const response = await fetch('http://localhost:11434/api/tags');
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data.models || !Array.isArray(data.models)) {
+        throw new Error('Invalid response structure from Ollama.');
+      }
+
+      const existingParticipants = storage.getAiParticipants();
+      let addedCount = 0;
+
+      data.models.forEach((model: any) => {
+        const modelName = model.name;
+        const exists = existingParticipants.some(
+          p => p.apiUrl === 'http://localhost:11434/v1' && p.model === modelName
+        );
+
+        if (!exists) {
+          storage.addAiParticipant({
+            name: `Ollama: ${modelName.split(':')[0]}`,
+            apiType: 'openai-compatible',
+            apiUrl: 'http://localhost:11434/v1',
+            apiKey: '',
+            model: modelName,
+            systemPrompt: 'You are a local AI assistant running via Ollama. Keep your responses short and natural.',
+            isActive: true,
+            icon: 'cpu',
+            color: 'emerald'
+          });
+          addedCount++;
+        }
+      });
+
+      if (addedCount > 0) {
+        onParticipantsChange(storage.getAiParticipants());
+        toast({
+          title: 'Ollama Scan Completed',
+          description: `Discovered and added ${addedCount} new local model(s)!`,
+        });
+      } else {
+        toast({
+          title: 'Ollama Scan Completed',
+          description: 'No new models found. All local Ollama models are already registered.',
+        });
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast({
+        title: 'Ollama Connection Failed',
+        description: 'Make sure Ollama is running at http://localhost:11434 and CORS is enabled (e.g. OLLAMA_ORIGINS="*" ollama serve).',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleExportWorkspace = () => {
+    try {
+      const backup = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        conversations: storage.getConversations(),
+        messages: JSON.parse(localStorage.getItem('ai_hub_messages') || '[]'),
+        participants: storage.getAiParticipants(),
+        settings: settings
+      };
+
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aiconvohub-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Backup Exported',
+        description: 'Workspace state was saved to a JSON file successfully.',
+      });
+    } catch (e: any) {
+      toast({
+        title: 'Export Failed',
+        description: e.message || 'Unknown error occurred.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleImportWorkspace = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const backup = JSON.parse(text);
+
+        if (!backup.conversations || !backup.participants || !backup.messages) {
+          throw new Error('Invalid backup file structure.');
+        }
+
+        if (confirm('Importing this backup will completely overwrite your current conversations, messages, and custom AI configurations. Are you sure you want to proceed?')) {
+          localStorage.setItem('ai_hub_conversations', JSON.stringify(backup.conversations));
+          localStorage.setItem('ai_hub_messages', JSON.stringify(backup.messages));
+          localStorage.setItem('ai_hub_participants', JSON.stringify(backup.participants));
+          
+          if (backup.settings) {
+            localStorage.setItem('ai_hub_global_settings', JSON.stringify(backup.settings));
+          }
+
+          toast({
+            title: 'Workspace Restored',
+            description: 'Restarting application to apply backup data...',
+          });
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+      } catch (err: any) {
+        toast({
+          title: 'Import Failed',
+          description: err.message || 'Could not parse JSON backup file.',
+          variant: 'destructive',
+        });
+      }
+    };
+    reader.readAsText(file);
   };
 
   return (
@@ -358,15 +498,28 @@ export function SettingsPanel({
                     <Bot className="w-4.5 h-4.5 mr-2 text-indigo-600" />
                     AI Group Participants
                   </h3>
-                  <Button 
-                    onClick={handleStartAdd} 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-8 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2.5 py-1 rounded-lg"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1" />
-                    Add AI
-                  </Button>
+                  <div className="flex items-center space-x-1">
+                    <Button 
+                      onClick={handleScanOllama}
+                      disabled={isScanning}
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-8 text-xs font-semibold text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 px-2 py-1 rounded-lg"
+                      title="Scan local Ollama server for models"
+                    >
+                      <RefreshCw className={cn("w-3.5 h-3.5 mr-1", isScanning && "animate-spin")} />
+                      Scan Ollama
+                    </Button>
+                    <Button 
+                      onClick={handleStartAdd} 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-8 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2.5 py-1 rounded-lg"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" />
+                      Add AI
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -452,9 +605,9 @@ export function SettingsPanel({
                   </div>
                 </div>
 
-                 {/* Max Auto Rounds */}
+                 {/* Max Auto Messages */}
                 <div className="space-y-1.5">
-                  <Label className="block text-xs font-semibold text-gray-600 uppercase">Max Auto Rounds</Label>
+                  <Label className="block text-xs font-semibold text-gray-600 uppercase">Max Auto Messages</Label>
                   <Select
                     value={settings.maxAutoRounds.toString()}
                     onValueChange={(value) => onSettingsChange({ ...settings, maxAutoRounds: parseInt(value) })}
@@ -463,10 +616,10 @@ export function SettingsPanel({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="5">5 rounds</SelectItem>
-                      <SelectItem value="10">10 rounds</SelectItem>
-                      <SelectItem value="20">20 rounds</SelectItem>
-                      <SelectItem value="50">50 rounds</SelectItem>
+                      <SelectItem value="5">5 Messages</SelectItem>
+                      <SelectItem value="10">10 Messages</SelectItem>
+                      <SelectItem value="20">20 Messages</SelectItem>
+                      <SelectItem value="50">50 Messages</SelectItem>
                       <SelectItem value="-1">Unlimited</SelectItem>
                     </SelectContent>
                   </Select>
@@ -522,6 +675,42 @@ export function SettingsPanel({
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Context History Limit */}
+                <div className="space-y-1.5 pt-1.5">
+                  <Label className="block text-xs font-semibold text-gray-600 uppercase">Context History Limit</Label>
+                  <Select
+                    value={settings.contextLimit !== undefined ? settings.contextLimit.toString() : "15"}
+                    onValueChange={(value) => onSettingsChange({ ...settings, contextLimit: parseInt(value) })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">Last 5 messages (Lowest cost)</SelectItem>
+                      <SelectItem value="10">Last 10 messages (Budget)</SelectItem>
+                      <SelectItem value="15">Last 15 messages (Standard)</SelectItem>
+                      <SelectItem value="25">Last 25 messages (Balanced)</SelectItem>
+                      <SelectItem value="50">Last 50 messages (High coherence)</SelectItem>
+                      <SelectItem value="-1">Full Chat History (High cost)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Credit Saver Switch */}
+                <div className="flex items-center space-x-2 pt-1.5">
+                  <Switch
+                    id="creditSaver"
+                    checked={settings.creditSaver || false}
+                    onCheckedChange={(checked) => onSettingsChange({ ...settings, creditSaver: checked })}
+                  />
+                  <div className="space-y-0.5">
+                    <Label htmlFor="creditSaver" className="text-xs font-semibold text-gray-700">
+                      Credit Saver Mode
+                    </Label>
+                    <p className="text-[10px] text-gray-400">Minifies code blocks and older texts in API prompts to save tokens.</p>
+                  </div>
+                </div>
               </div>
 
               {/* Status and Health Check indicators */}
@@ -550,6 +739,34 @@ export function SettingsPanel({
                   {participants.filter(p => p.isActive).length === 0 && (
                     <p className="text-xs text-gray-400 italic text-center">No active models selected.</p>
                   )}
+                </div>
+              </div>
+
+              {/* System Tools / Workspace Backup */}
+              <div className="border-t border-gray-100 pt-5 space-y-3 pb-4">
+                <h3 className="text-sm font-semibold text-gray-900">Workspace Management</h3>
+                <p className="text-[10px] text-gray-400">Backup all conversations, settings, and custom AI agents to a JSON file, or restore them.</p>
+                <div className="grid grid-cols-2 gap-3.5 pt-1.5">
+                  <Button
+                    onClick={handleExportWorkspace}
+                    variant="outline"
+                    className="text-xs font-semibold h-9 rounded-xl border-gray-200 hover:bg-gray-50 flex items-center justify-center"
+                  >
+                    <Download className="w-3.5 h-3.5 mr-1.5 text-gray-500" />
+                    Export Backup
+                  </Button>
+                  <label className="cursor-pointer">
+                    <span className="text-xs font-semibold h-9 rounded-xl border border-gray-200 hover:bg-gray-50 flex items-center justify-center bg-white text-gray-900 shadow-sm transition-colors text-center px-2">
+                      <Upload className="w-3.5 h-3.5 mr-1.5 text-gray-500 inline" />
+                      Import Backup
+                    </span>
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportWorkspace}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
               </div>
 

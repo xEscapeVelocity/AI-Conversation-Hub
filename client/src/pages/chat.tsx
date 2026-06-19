@@ -16,19 +16,57 @@ import {
   Download,
   Send,
   Users,
-  Terminal
+  Plus,
+  MessageSquare,
+  PanelLeftClose,
+  PanelLeft,
+  PanelRightClose,
+  PanelRight,
+  Edit2,
+  Check,
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { storage, Message, AiParticipant } from '@/lib/storage';
+import { storage, Message, AiParticipant, Conversation } from '@/lib/storage';
 import { aiOrchestrator } from '@/lib/ai-orchestrator';
+import { cn } from '@/lib/utils';
 
 export default function Chat() {
   const [conversationId, setConversationId] = useState<string>('');
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [aiParticipants, setAiParticipants] = useState<AiParticipant[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const [isAutoMode, setIsAutoMode] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Sidebar visibility states
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+
+  // Conversation editing states
+  const [editingConvId, setEditingConvId] = useState<string | null>(null);
+  const [editingConvTitle, setEditingConvTitle] = useState('');
+
+  // Darkmode theme state
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark' || saved === 'light') return saved;
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+    return 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
   
   // Multiple AIs can type in parallel
   const [typingAIs, setTypingAIs] = useState<string[]>([]);
@@ -45,7 +83,9 @@ export default function Chat() {
       maxAutoRounds: 10,
       handleRateLimits: true,
       exportFormat: 'md',
-      replyMode: 'sequential'
+      replyMode: 'sequential',
+      contextLimit: 15,
+      creditSaver: false
     };
     const saved = localStorage.getItem('ai_hub_global_settings');
     if (saved) {
@@ -90,29 +130,39 @@ export default function Chat() {
   useEffect(() => { isAutoModeRef.current = isAutoMode; }, [isAutoMode]);
   useEffect(() => { settingsRef.current = settings; }, [settings]);
 
-  // Load / Initialize conversation
+  // Load / Initialize conversation on launch
   useEffect(() => {
-    // Check if there's any existing conversation, otherwise create one
-    const convs = storage.getConversations();
-    let conv = convs[0];
+    const list = storage.getConversations();
+    setConversations(list);
+    
+    let conv = list[0];
     if (!conv) {
       conv = storage.createConversation();
+      setConversations([conv]);
     }
+    
+    loadChatSession(conv);
+  }, []);
+
+  // Helper to load chat states
+  const loadChatSession = (conv: Conversation) => {
+    if (autoTimeoutRef.current) clearTimeout(autoTimeoutRef.current);
     
     setConversationId(conv.id);
     setMessages(storage.getMessages(conv.id));
     setAiParticipants(storage.getAiParticipants());
-    
-
     setIsAutoMode(conv.isAutoMode ?? false);
-    
+    isAutoModeRef.current = conv.isAutoMode ?? false;
     currentRoundsRef.current = conv.currentRounds || 0;
-    setStats(prev => ({
-      ...prev,
+    
+    setStats({
       totalMessages: storage.getMessages(conv.id).length,
-      autoRounds: conv.currentRounds || 0
-    }));
-  }, []);
+      autoRounds: conv.currentRounds || 0,
+      duration: '0m 0s'
+    });
+    
+    startTimeRef.current = new Date();
+  };
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -131,6 +181,96 @@ export default function Chat() {
     return () => clearInterval(interval);
   }, []);
 
+  // Create a brand new chat session
+  const handleNewChat = () => {
+    const newConv = storage.createConversation();
+    const list = storage.getConversations();
+    setConversations(list);
+    loadChatSession(newConv);
+    toast({
+      title: 'New Chat Created',
+      description: 'Started a fresh group conversation.',
+    });
+  };
+
+  // Switch between previous chats
+  const handleSwitchChat = (id: string) => {
+    const conv = storage.getConversation(id);
+    if (conv) {
+      loadChatSession(conv);
+    }
+  };
+
+  // Delete a conversation
+  const handleDeleteChat = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Avoid triggering switch chat on click
+    
+    storage.deleteConversation(id);
+    const list = storage.getConversations();
+    setConversations(list);
+    
+    // If we deleted the active chat, switch to another or create a new one
+    if (id === conversationId) {
+      if (list.length > 0) {
+        // Delete current and list has items: load first
+        const nextConv = list.filter(c => c.id !== id)[0] || list[0];
+        if (nextConv) {
+          loadChatSession(nextConv);
+        }
+      } else {
+        // Delete current and list is empty: create fresh chat
+        const fresh = storage.createConversation();
+        setConversations([fresh]);
+        loadChatSession(fresh);
+      }
+    }
+    
+    toast({
+      title: 'Chat Deleted',
+      description: 'Conversation history was permanently cleared.',
+    });
+  };
+
+  const handleRenameChat = (id: string, newTitle: string) => {
+    if (newTitle.trim()) {
+      storage.updateConversation(id, { title: newTitle.trim() });
+      setConversations(storage.getConversations());
+    }
+    setEditingConvId(null);
+  };
+
+  const groupConversationsByDate = (convs: Conversation[]) => {
+    const sorted = [...convs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const groups: { [key: string]: Conversation[] } = {
+      'Today': [],
+      'Yesterday': [],
+      'Previous 7 Days': [],
+      'Older': []
+    };
+
+    sorted.forEach(c => {
+      const date = new Date(c.createdAt);
+      if (date >= today) {
+        groups['Today'].push(c);
+      } else if (date >= yesterday) {
+        groups['Yesterday'].push(c);
+      } else if (date >= sevenDaysAgo) {
+        groups['Previous 7 Days'].push(c);
+      } else {
+        groups['Older'].push(c);
+      }
+    });
+
+    return groups;
+  };
+
   // Orchestrator: Trigger all active AIs to respond (either sequentially or in parallel based on replyMode setting)
   const triggerAllAIResponses = async (currentConvId: string) => {
     const activeAIs = aiParticipantsRef.current.filter(p => p.isActive && p.status === 'online');
@@ -148,7 +288,12 @@ export default function Chat() {
 
           try {
             const currentMessages = storage.getMessages(currentConvId);
-            const response = await aiOrchestrator.callAI(ai, currentMessages);
+            const response = await aiOrchestrator.callAI(
+              ai, 
+              currentMessages, 
+              settingsRef.current.contextLimit, 
+              settingsRef.current.creditSaver
+            );
             
             // Remove typing indicator
             setTypingAIs(prev => prev.filter(name => name !== ai.name));
@@ -201,7 +346,12 @@ export default function Chat() {
 
         try {
           const currentMessages = storage.getMessages(currentConvId);
-          const response = await aiOrchestrator.callAI(ai, currentMessages);
+          const response = await aiOrchestrator.callAI(
+            ai, 
+            currentMessages, 
+            settingsRef.current.contextLimit, 
+            settingsRef.current.creditSaver
+          );
           
           // Remove typing indicator
           setTypingAIs([]);
@@ -257,7 +407,7 @@ export default function Chat() {
       handleStopConversation();
       toast({
         title: 'Auto Conversation Completed',
-        description: `Reached maximum limit of ${maxRounds} rounds.`,
+        description: `Reached maximum limit of ${maxRounds} messages.`,
       });
       return;
     }
@@ -282,7 +432,12 @@ export default function Chat() {
 
     try {
       const currentMessages = storage.getMessages(currentConvId);
-      const response = await aiOrchestrator.callAI(ai, currentMessages);
+      const response = await aiOrchestrator.callAI(
+        ai, 
+        currentMessages, 
+        settingsRef.current.contextLimit, 
+        settingsRef.current.creditSaver
+      );
       
       // Clear typing indicator
       setTypingAIs([]);
@@ -360,6 +515,16 @@ export default function Chat() {
     setMessages(prev => [...prev, userMsg]);
     setStats(prev => ({ ...prev, totalMessages: prev.totalMessages + 1 }));
     setMessageInput('');
+
+    // Automatically name the conversation if it was using the default name
+    const currentMessages = storage.getMessages(conversationId);
+    const isFirstMessage = currentMessages.length === 1;
+    const activeConv = storage.getConversation(conversationId);
+    if (isFirstMessage && activeConv && (activeConv.title?.startsWith('Chat ') || activeConv.title?.startsWith('Conversation '))) {
+      const firstMessageExcerpt = messageInput.slice(0, 26) + (messageInput.length > 26 ? '...' : '');
+      storage.updateConversation(conversationId, { title: firstMessageExcerpt });
+      setConversations(storage.getConversations());
+    }
 
     // If auto mode is active, do not interrupt the loop. If manual mode, let all active AIs respond.
     if (!isAutoMode) {
@@ -457,276 +622,369 @@ export default function Chat() {
   const activeParticipantsCount = aiParticipants.filter(p => p.isActive && p.status === 'online').length;
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gray-50/50">
-      {/* Mobile Header with AI Status */}
-      <div className="lg:hidden bg-white border-b border-gray-150 flex-shrink-0">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-base font-bold text-gray-900 flex items-center">
-              <Bot className="text-indigo-600 mr-2 w-5 h-5 animate-pulse" />
-              AI Group Chat
-            </h1>
-            <p className="text-[10px] text-gray-500 font-semibold mt-0.5">
-              {activeParticipantsCount} Active Collaborators
-            </p>
+    <div className="flex h-screen overflow-hidden bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
+      
+      {/* ================= COLUMN 1: LEFT SIDEBAR (Chats List) ================= */}
+      <div 
+        className={cn(
+          "w-64 bg-slate-900 text-white flex flex-col h-full flex-shrink-0 transition-all duration-300 border-r border-slate-950 z-30",
+          !isLeftSidebarOpen && "w-0 overflow-hidden border-none"
+        )}
+      >
+        {/* App Title */}
+        <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-md">
+              <Bot className="w-5 h-5 text-white animate-pulse" />
+            </div>
+            <span className="font-bold text-sm tracking-wide">AI ConvoHub</span>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600 rounded-full" onClick={() => setIsSettingsOpen(true)}>
+        </div>
+
+        {/* New Chat Button */}
+        <div className="p-4">
+          <Button 
+            onClick={handleNewChat}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl h-10 shadow-md border-indigo-700/20"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Conversation
+          </Button>
+        </div>
+
+        {/* Scrollable list of past conversations */}
+        <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-4">
+          {conversations.length === 0 ? (
+            <p className="text-xs text-slate-500 italic px-3">No conversations yet</p>
+          ) : (
+            (() => {
+              const groups = groupConversationsByDate(conversations);
+              return Object.entries(groups).map(([groupTitle, items]) => {
+                if (items.length === 0) return null;
+                return (
+                  <div key={groupTitle} className="space-y-1">
+                    <h3 className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                      {groupTitle}
+                    </h3>
+                    {items.map((conv) => {
+                      const isEditing = editingConvId === conv.id;
+                      return (
+                        <div 
+                          key={conv.id}
+                          onClick={() => !isEditing && handleSwitchChat(conv.id)}
+                          onDoubleClick={() => {
+                            setEditingConvId(conv.id);
+                            setEditingConvTitle(conv.title || '');
+                          }}
+                          className={cn(
+                            "group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-150",
+                            conv.id === conversationId 
+                              ? "bg-slate-800 text-indigo-400 font-bold border border-slate-700/50" 
+                              : "text-slate-400 hover:bg-slate-800/40 hover:text-white"
+                          )}
+                        >
+                          <div className="flex items-center space-x-2.5 min-w-0 pr-2 flex-1">
+                            <MessageSquare className="w-3.5 h-3.5 flex-shrink-0" />
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editingConvTitle}
+                                onChange={(e) => setEditingConvTitle(e.target.value)}
+                                onBlur={() => handleRenameChat(conv.id, editingConvTitle)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleRenameChat(conv.id, editingConvTitle);
+                                  } else if (e.key === 'Escape') {
+                                    setEditingConvId(null);
+                                  }
+                                }}
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                                className="bg-slate-700 text-white border border-indigo-500 rounded px-1.5 py-0.5 text-xs focus:outline-none w-full"
+                              />
+                            ) : (
+                              <span className="truncate">{conv.title}</span>
+                            )}
+                          </div>
+                          
+                          {!isEditing && (
+                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingConvId(conv.id);
+                                  setEditingConvTitle(conv.title || '');
+                                }}
+                                className="hover:text-indigo-400 p-0.5 rounded transition-colors"
+                                title="Rename chat"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                onClick={(e) => handleDeleteChat(conv.id, e)}
+                                className="hover:text-red-400 p-0.5 rounded transition-colors"
+                                title="Delete chat"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              });
+            })()
+          )}
+        </div>
+      </div>
+
+      {/* ================= COLUMN 2: CENTER AREA (Chat window) ================= */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-gray-50/20 dark:bg-slate-950/20">
+        
+        {/* Chat Area Top Header */}
+        <div className="bg-white dark:bg-slate-900 border-b border-gray-150 dark:border-slate-800 p-4 flex-shrink-0 flex items-center justify-between shadow-sm z-20">
+          <div className="flex items-center space-x-3">
+            {/* Left Sidebar Toggle */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl"
+              onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+              title={isLeftSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
+            >
+              {isLeftSidebarOpen ? <PanelLeftClose className="w-4.5 h-4.5" /> : <PanelLeft className="w-4.5 h-4.5" />}
+            </Button>
+            
+            <div className="border-l border-gray-100 dark:border-slate-850 pl-3">
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white">
+                {conversations.find(c => c.id === conversationId)?.title || "Group Conversation"}
+              </h2>
+              <p className="text-[10px] text-gray-400 dark:text-slate-400 font-bold flex items-center mt-0.5">
+                <Users className="mr-1.5 w-3.5 h-3.5 text-indigo-500" />
+                {activeParticipantsCount} active models
+                <span className="mx-2 text-gray-200 dark:text-slate-700">|</span>
+                <span className="text-gray-500 dark:text-slate-400">
+                  Mode: <strong className="text-indigo-600 dark:text-indigo-400 font-bold capitalize">{settings.replyMode}</strong>
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-1.5">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800" 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
+              title={theme === 'dark' ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {theme === 'dark' ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+            </Button>
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800" onClick={handleExportConversation} title="Export transcript">
+              <Download className="w-4.5 h-4.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800" onClick={() => setIsSettingsOpen(true)} title="Manage settings">
+              <Settings className="w-4.5 h-4.5" />
+            </Button>
+            {/* Right Sidebar Toggle */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl"
+              onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+              title={isRightSidebarOpen ? "Hide Controls" : "Show Controls"}
+            >
+              {isRightSidebarOpen ? <PanelRightClose className="w-4.5 h-4.5" /> : <PanelRight className="w-4.5 h-4.5" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Header with AI Status */}
+        <div className="lg:hidden bg-white dark:bg-slate-900 border-b border-gray-150 dark:border-slate-800 flex-shrink-0 flex items-center justify-between p-3">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600 dark:text-slate-400 rounded-xl" onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}>
+            <PanelLeft className="w-4 h-4" />
+          </Button>
+          <h1 className="text-xs font-bold text-gray-900 dark:text-white flex items-center">
+            <Bot className="text-indigo-600 mr-1.5 w-4 h-4" />
+            AI ConvoHub
+          </h1>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600 dark:text-slate-400 rounded-xl" onClick={() => setIsSettingsOpen(true)}>
             <Settings className="w-4 h-4" />
           </Button>
         </div>
 
-        {/* Mobile Horizontal scroll list of active bots */}
-        <div className="px-4 pb-2 flex space-x-2 overflow-x-auto border-t border-gray-50 pt-2">
-          {aiParticipants.filter(p => p.isActive).map(p => (
-            <div key={p.id} className="flex items-center space-x-1.5 bg-gray-100/80 px-2.5 py-1 rounded-full border border-gray-150 text-[10px] font-semibold text-gray-700 whitespace-nowrap">
-              <span className={`w-1.5 h-1.5 rounded-full ${p.status === 'online' ? 'bg-green-500' : 'bg-amber-500'}`} />
-              <span>{p.name}</span>
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center max-w-md mx-auto py-12">
+              <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl mb-4 shadow-sm shadow-indigo-50">
+                <Bot className="w-8 h-8 animate-pulse" />
+              </div>
+              <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Group Chat Space</h3>
+              <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+                Welcome! This is your local group chat. Select or add AIs in the panel, and send a message below to start collaborating.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {messages.map((message) => (
+                <ChatMessage
+                  key={message.id}
+                  content={message.content}
+                  sender={message.sender}
+                  timestamp={new Date(message.timestamp)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Typing Indicators */}
+          {typingAIs.map((name) => (
+            <div key={name} className="flex items-start space-x-3.5 animate-fade-in">
+              <div className="w-8.5 h-8.5 bg-gray-200 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse">
+                <Bot className="text-gray-500 dark:text-slate-400 text-sm" size={16} />
+              </div>
+              <div className="flex-1 max-w-[80%]">
+                <span className="text-[10px] text-gray-400 dark:text-slate-400 font-bold ml-1 mb-1 block uppercase tracking-wide">{name} is thinking...</span>
+                <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl rounded-tl-none p-3.5 max-w-xs shadow-sm shadow-black/5">
+                  <div className="flex space-x-1 items-center h-2">
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" />
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
+
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Mobile Control Buttons */}
-        <div className="px-4 py-2 border-t border-gray-100 flex space-x-1.5 overflow-x-auto bg-gray-50/30">
+        {/* Message Input */}
+        <div className="bg-white dark:bg-slate-900 border-t border-gray-150 dark:border-slate-800 p-4 lg:p-5 flex-shrink-0 shadow-lg shadow-black/5 z-10">
+          <div className="flex items-center space-x-4 max-w-4xl mx-auto">
+            <div className="flex-1 relative flex items-center">
+              <Input
+                type="text"
+                placeholder={
+                  activeParticipantsCount === 0 
+                    ? "Enable or configure AI agents in Settings to start..." 
+                    : "Type your message to address the AIs..."
+                }
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                onKeyDown={handleKeyPress}
+                disabled={activeParticipantsCount === 0}
+                className="pr-12 py-5.5 rounded-xl border-gray-250 dark:border-slate-800 bg-white dark:bg-slate-950 dark:text-white focus-visible:ring-indigo-600 text-sm shadow-sm"
+              />
+              <Button
+                onClick={handleSendMessage}
+                size="icon"
+                className="absolute right-2 h-8 w-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg animate-fade-in"
+                disabled={!messageInput.trim() || activeParticipantsCount === 0}
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= COLUMN 3: RIGHT SIDEBAR (Active Collaborators & Controls) ================= */}
+      <div 
+        className={cn(
+          "w-80 bg-white dark:bg-slate-900 border-l border-gray-150 dark:border-slate-800 flex flex-col h-full flex-shrink-0 transition-all duration-300 z-30",
+          !isRightSidebarOpen && "w-0 overflow-hidden border-none"
+        )}
+      >
+        {/* Header */}
+        <div className="p-6 border-b border-gray-150 dark:border-slate-800 bg-gray-50/20 dark:bg-slate-950/20">
+          <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center">
+            <Users className="text-indigo-600 mr-2 w-4.5 h-4.5" />
+            Session Hub
+          </h2>
+        </div>
+
+        {/* AI Status Panel */}
+        <div className="flex-1 overflow-y-auto">
+          <AiStatusPanel 
+            participants={aiParticipants} 
+            onReorder={(updated) => {
+              setAiParticipants(updated);
+              storage.saveAiParticipants(updated);
+            }}
+          />
+        </div>
+
+        {/* Control Buttons */}
+        <div className="p-6 border-t border-gray-100 dark:border-slate-800 space-y-3 flex-shrink-0">
+          <h3 className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+            Execution Control
+          </h3>
+          
           <Button
             onClick={handleLetThemTalk}
             disabled={isAutoMode}
-            size="sm"
-            className="bg-indigo-600 hover:bg-indigo-700 text-xs py-1 h-8 rounded-xl"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-xs font-bold rounded-xl h-10 shadow-sm"
           >
-            <Play className="mr-1 w-3.5 h-3.5" />
-            Auto Talk
+            <Play className="mr-2 w-3.5 h-3.5" />
+            Let Them Talk
           </Button>
+
           <Button
             onClick={handleSendOneMessage}
             disabled={isAutoMode}
             variant="outline"
-            size="sm"
-            className="text-xs py-1 h-8 rounded-xl"
+            className="w-full text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 border-indigo-100 dark:border-slate-800 text-xs font-bold rounded-xl h-10"
           >
-            <MessageCircle className="mr-1 w-3.5 h-3.5 text-indigo-600" />
-            Step
+            <MessageCircle className="mr-2 w-3.5 h-3.5" />
+            Send One Message
           </Button>
+
           <Button
             onClick={handleStopConversation}
             disabled={!isAutoMode}
             variant="destructive"
-            size="sm"
-            className="text-xs py-1 h-8 rounded-xl"
+            className="w-full text-xs font-bold rounded-xl h-10 shadow-sm"
           >
-            <Square className="mr-1 w-3.5 h-3.5" />
-            Stop
+            <Square className="mr-2 w-3.5 h-3.5" />
+            Stop Conversation
           </Button>
+
           <Button
             onClick={handleClearChat}
             variant="ghost"
-            size="sm"
-            className="text-xs py-1 h-8 text-gray-500 hover:text-red-600 rounded-xl hover:bg-red-50"
+            className="w-full text-gray-500 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 text-xs font-bold rounded-xl h-10"
           >
-            <Trash2 className="mr-1 w-3.5 h-3.5" />
-            Clear
+            <Trash2 className="mr-2 w-3.5 h-3.5" />
+            Clear Chat History
           </Button>
         </div>
-      </div>
 
-      {/* Main Layout Area */}
-      <div className="flex flex-1 overflow-hidden">
-        
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:flex w-80 bg-white border-r border-gray-150 flex-col flex-shrink-0">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-150 bg-gray-50/20">
-            <h1 className="text-lg font-bold text-gray-900 flex items-center">
-              <Bot className="text-indigo-600 mr-2.5 w-6 h-6" />
-              AI Conversation Hub
-            </h1>
-            <p className="text-xs text-gray-400 mt-1 font-semibold">Local Open-Source Collaboration</p>
-          </div>
-
-          {/* AI Status Panel */}
-          <div className="flex-1 overflow-y-auto">
-            <AiStatusPanel 
-              participants={aiParticipants} 
-              onReorder={(updated) => {
-                setAiParticipants(updated);
-                storage.saveAiParticipants(updated);
-              }}
-            />
-          </div>
-
-          {/* Control Buttons */}
-          <div className="p-6 border-t border-gray-100 space-y-3">
-            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
-              Execution Control
-            </h3>
-            
-            <Button
-              onClick={handleLetThemTalk}
-              disabled={isAutoMode}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-sm font-semibold rounded-xl h-10 shadow-sm shadow-indigo-150"
-            >
-              <Play className="mr-2 w-4 h-4" />
-              Let Them Talk
-            </Button>
-
-            <Button
-              onClick={handleSendOneMessage}
-              disabled={isAutoMode}
-              variant="outline"
-              className="w-full text-indigo-600 hover:bg-indigo-50 border-indigo-100 font-semibold rounded-xl h-10"
-            >
-              <MessageCircle className="mr-2 w-4 h-4" />
-              Send One Message
-            </Button>
-
-            <Button
-              onClick={handleStopConversation}
-              disabled={!isAutoMode}
-              variant="destructive"
-              className="w-full font-semibold rounded-xl h-10 shadow-sm"
-            >
-              <Square className="mr-2 w-4 h-4" />
-              Stop Conversation
-            </Button>
-
-            <Button
-              onClick={handleClearChat}
-              variant="ghost"
-              className="w-full text-gray-500 hover:text-red-600 hover:bg-red-50 font-semibold rounded-xl h-10"
-            >
-              <Trash2 className="mr-2 w-4 h-4" />
-              Clear Chat history
-            </Button>
-          </div>
-
-          {/* Conversation Stats */}
-          <div className="p-6 border-t border-gray-150 bg-gray-50/50">
-            <Card className="border-gray-150 shadow-none rounded-2xl bg-white">
-              <CardContent className="p-4">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Session Stats</h4>
-                <div className="space-y-2 text-xs font-semibold text-gray-600">
-                  <div className="flex justify-between items-center border-b border-gray-50 pb-1.5">
-                    <span>Messages:</span>
-                    <span className="text-gray-900 font-bold">{stats.totalMessages}</span>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-gray-50 pb-1.5">
-                    <span>Auto Rounds:</span>
-                    <span className="text-gray-900 font-bold">{stats.autoRounds}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Active Duration:</span>
-                    <span className="text-indigo-600 font-bold">{stats.duration}</span>
-                  </div>
+        {/* Conversation Stats */}
+        <div className="p-6 border-t border-gray-150 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950/30 flex-shrink-0">
+          <Card className="border-gray-150 dark:border-slate-800 shadow-none rounded-2xl bg-white dark:bg-slate-950">
+            <CardContent className="p-4">
+              <h4 className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3">Session Stats</h4>
+              <div className="space-y-2 text-xs font-semibold text-gray-600 dark:text-slate-400">
+                <div className="flex justify-between items-center border-b border-gray-50 dark:border-slate-800 pb-1.5">
+                  <span>Messages:</span>
+                  <span className="text-gray-900 dark:text-white font-bold">{stats.totalMessages}</span>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <div className="flex justify-between items-center border-b border-gray-50 dark:border-slate-800 pb-1.5">
+                  <span>Auto Messages:</span>
+                  <span className="text-gray-900 dark:text-white font-bold">{stats.autoRounds}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Active Duration:</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 font-bold">{stats.duration}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-
-        {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col h-full bg-gray-50/30">
-          
-          {/* Desktop Chat Header */}
-          <div className="hidden lg:block bg-white border-b border-gray-150 p-5 flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-md font-bold text-gray-900">Group Chat</h2>
-                <p className="text-xs text-gray-400 font-semibold flex items-center mt-1">
-                  <Users className="mr-1.5 w-3.5 h-3.5 text-indigo-500" />
-                  {activeParticipantsCount} active models in channel
-                  <span className="mx-2 text-gray-200">|</span>
-                  <span className={isAutoMode ? 'text-indigo-600 font-bold' : 'text-gray-500'}>
-                    {isAutoMode ? 'Auto mode loop active' : 'Manual step mode'}
-                  </span>
-                </p>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-500 hover:text-gray-900 rounded-xl hover:bg-gray-100" onClick={handleExportConversation} title="Export transcript">
-                  <Download className="w-4.5 h-4.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-500 hover:text-gray-900 rounded-xl hover:bg-gray-100" onClick={() => setIsSettingsOpen(true)} title="Manage agents">
-                  <Settings className="w-4.5 h-4.5" />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center max-w-md mx-auto py-12">
-                <div className="p-4 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-2xl mb-4 shadow-sm shadow-indigo-50">
-                  <Bot className="w-8 h-8 animate-pulse" />
-                </div>
-                <h3 className="text-base font-bold text-gray-900 mb-2">Group Chat Channel</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  Welcome! This is your local group chat space. Add your AI agents, configure their API keys, and type below to start talking. Or click <strong className="text-indigo-600 font-bold">Let Them Talk</strong> to trigger an autonomous back-and-forth round.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-5">
-                {messages.map((message) => (
-                  <ChatMessage
-                    key={message.id}
-                    content={message.content}
-                    sender={message.sender}
-                    timestamp={new Date(message.timestamp)}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Typing Indicators */}
-            {typingAIs.map((name) => (
-              <div key={name} className="flex items-start space-x-3.5 animate-fade-in">
-                <div className="w-8.5 h-8.5 bg-gray-200 border border-gray-300 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse">
-                  <Bot className="text-gray-500 text-sm" size={16} />
-                </div>
-                <div className="flex-1 max-w-[80%]">
-                  <span className="text-[10px] text-gray-400 font-bold ml-1 mb-1 block uppercase tracking-wide">{name} is thinking...</span>
-                  <div className="bg-white border border-gray-150 rounded-2xl rounded-tl-none p-3.5 max-w-xs shadow-sm shadow-black/5">
-                    <div className="flex space-x-1 items-center h-2">
-                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" />
-                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
-                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Message Input */}
-          <div className="bg-white border-t border-gray-150 p-4 lg:p-5 flex-shrink-0 shadow-lg shadow-black/5">
-            <div className="flex items-center space-x-4 max-w-4xl mx-auto">
-              <div className="flex-1 relative flex items-center">
-                <Input
-                  type="text"
-                  placeholder={
-                    activeParticipantsCount === 0 
-                      ? "Enable or configure AI agents in Settings to start..." 
-                      : "Type your message to address the AIs..."
-                  }
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  disabled={activeParticipantsCount === 0}
-                  className="pr-12 py-5.5 rounded-xl border-gray-250 focus-visible:ring-indigo-600 text-sm shadow-sm"
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  size="icon"
-                  className="absolute right-2 h-8 w-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
-                  disabled={!messageInput.trim() || activeParticipantsCount === 0}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
 
       {/* Settings Panel */}

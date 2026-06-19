@@ -9,13 +9,31 @@ export interface AIResponse {
 function formatGroupChatPrompt(
   aiName: string,
   systemPrompt: string,
-  messages: Message[]
+  messages: Message[],
+  contextLimit = 15,
+  creditSaver = false
 ): { systemInstruction: string; userPrompt: string } {
-  const log = messages
-    .slice(-15) // last 15 messages for context
-    .map(msg => {
+  const limit = contextLimit === -1 ? messages.length : contextLimit;
+  const slicedMessages = messages.slice(-limit);
+
+  const log = slicedMessages
+    .map((msg, idx) => {
       const sender = (msg.sender === 'user' || msg.sender === 'You') ? 'User' : msg.sender;
-      return `${sender}: ${msg.content}`;
+      let content = msg.content;
+      
+      // If creditSaver is active, compress older messages (older than the last 2)
+      if (creditSaver && idx < slicedMessages.length - 2) {
+        // Truncate markdown code blocks
+        content = content.replace(/```([\s\S]*?)```/g, (match) => {
+          return `[Code block of ${match.length} characters truncated to save API credits]`;
+        });
+        // Truncate long paragraphs
+        if (content.length > 250) {
+          content = content.slice(0, 250) + '... [Message truncated to save API credits]';
+        }
+      }
+      
+      return `${sender}: ${content}`;
     })
     .join('\n');
 
@@ -38,14 +56,19 @@ Respond as "${aiName}":`;
 }
 
 // Call Gemini API directly via fetch
-async function callGemini(participant: AiParticipant, messages: Message[]): Promise<AIResponse> {
+async function callGemini(
+  participant: AiParticipant, 
+  messages: Message[], 
+  contextLimit?: number, 
+  creditSaver?: boolean
+): Promise<AIResponse> {
   const { apiKey, model, name, systemPrompt } = participant;
   if (!apiKey) {
     return { content: '', error: `API Key is missing for ${name}` };
   }
 
   try {
-    const { systemInstruction, userPrompt } = formatGroupChatPrompt(name, systemPrompt, messages);
+    const { systemInstruction, userPrompt } = formatGroupChatPrompt(name, systemPrompt, messages, contextLimit, creditSaver);
     
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -92,14 +115,19 @@ async function callGemini(participant: AiParticipant, messages: Message[]): Prom
 }
 
 // Call any OpenAI-compatible endpoint (Groq, local Ollama, LM Studio, etc.)
-async function callOpenAICompatible(participant: AiParticipant, messages: Message[]): Promise<AIResponse> {
+async function callOpenAICompatible(
+  participant: AiParticipant, 
+  messages: Message[], 
+  contextLimit?: number, 
+  creditSaver?: boolean
+): Promise<AIResponse> {
   const { apiUrl, apiKey, model, name, systemPrompt } = participant;
   if (!apiUrl) {
     return { content: '', error: `API URL is missing for ${name}` };
   }
 
   try {
-    const { systemInstruction, userPrompt } = formatGroupChatPrompt(name, systemPrompt, messages);
+    const { systemInstruction, userPrompt } = formatGroupChatPrompt(name, systemPrompt, messages, contextLimit, creditSaver);
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -149,11 +177,16 @@ async function callOpenAICompatible(participant: AiParticipant, messages: Messag
 }
 
 export const aiOrchestrator = {
-  async callAI(participant: AiParticipant, messages: Message[]): Promise<AIResponse> {
+  async callAI(
+    participant: AiParticipant, 
+    messages: Message[], 
+    contextLimit?: number, 
+    creditSaver?: boolean
+  ): Promise<AIResponse> {
     if (participant.apiType === 'gemini') {
-      return callGemini(participant, messages);
+      return callGemini(participant, messages, contextLimit, creditSaver);
     } else {
-      return callOpenAICompatible(participant, messages);
+      return callOpenAICompatible(participant, messages, contextLimit, creditSaver);
     }
   }
 };

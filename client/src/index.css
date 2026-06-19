@@ -119,3 +119,55 @@
     width: 100vw;
   }
 }
+
+/* Dark Mode Global Overrides */
+.dark {
+  color-scheme: dark;
+}
+
+.dark .bg-white {
+  background-color: hsl(240, 10%, 3.9%) !important;
+}
+
+.dark .bg-gray-50\/50 {
+  background-color: hsla(240, 10%, 3.9%, 0.5) !important;
+}
+
+.dark .bg-gray-50\/20 {
+  background-color: hsla(240, 10%, 3.9%, 0.2) !important;
+}
+
+.dark .bg-gray-200 {
+  background-color: hsl(240, 3.7%, 15.9%) !important;
+}
+
+.dark .border-gray-150,
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  border-color: hsl(240, 3.7%, 15.9%) !important;
+}
+
+.dark .text-gray-900 {
+  color: hsl(0, 0%, 98%) !important;
+}
+
+.dark .text-gray-800 {
+  color: hsl(0, 0%, 90%) !important;
+}
+
+.dark .text-gray-700 {
+  color: hsl(240, 5%, 84.9%) !important;
+}
+
+.dark .text-gray-600 {
+  color: hsl(240, 5%, 64.9%) !important;
+}
+
+.dark .text-gray-500 {
+  color: hsl(240, 5%, 54.9%) !important;
+}
+
+.dark .text-gray-400 {
+  color: hsl(240, 5%, 44.9%) !important;
+}

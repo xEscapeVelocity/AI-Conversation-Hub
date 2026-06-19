@@ -92,8 +92,8 @@ export function ChatMessage({ content, sender, timestamp }: ChatMessageProps) {
   const displayName = isUser ? 'You' : sender;
 
   const messageStyle = isUser 
-    ? 'bg-purple-600 text-white shadow-sm shadow-purple-100/50 rounded-2xl rounded-tr-none border border-purple-700/10' 
-    : 'bg-white border border-gray-150 shadow-sm rounded-2xl rounded-tl-none text-gray-800';
+    ? 'bg-purple-600 text-white shadow-sm shadow-purple-100/50 dark:shadow-none rounded-2xl rounded-tr-none border border-purple-700/10' 
+    : 'bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 shadow-sm rounded-2xl rounded-tl-none text-gray-800 dark:text-slate-100';
 
   return (
     <div className={cn('flex items-start space-x-3.5', isUser && 'flex-row-reverse space-x-reverse')}>
@@ -102,8 +102,8 @@ export function ChatMessage({ content, sender, timestamp }: ChatMessageProps) {
       </div>
       <div className="flex-1 max-w-[85%]">
         <div className={cn('flex items-center space-x-2 mb-1', isUser && 'justify-end')}>
-          <span className="font-semibold text-sm text-gray-900">{displayName}</span>
-          <span className="text-[10px] text-gray-400 font-medium">
+          <span className="font-semibold text-sm text-gray-900 dark:text-white">{displayName}</span>
+          <span className="text-[10px] text-gray-400 dark:text-slate-400 font-medium">
             {format(timestamp, 'h:mm a')}
           </span>
         </div>

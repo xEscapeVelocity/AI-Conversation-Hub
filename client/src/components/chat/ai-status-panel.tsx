@@ -129,17 +129,17 @@ export function AiStatusPanel({ participants, onReorder }: AiStatusPanelProps) {
   };
 
   return (
-    <div className="p-6 border-b border-gray-150">
+    <div className="p-6 border-b border-gray-150 dark:border-slate-800">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+        <h3 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
           Active Collaborators ({activeParticipants.length})
         </h3>
       </div>
       
       <div className="space-y-2.5">
         {activeParticipants.length === 0 ? (
-          <div className="text-center py-4 bg-gray-50/50 border border-dashed border-gray-200 rounded-xl">
-            <span className="text-xs text-gray-400 font-medium italic">No active AIs in chat</span>
+          <div className="text-center py-4 bg-gray-50/50 dark:bg-slate-900/30 border border-dashed border-gray-200 dark:border-slate-800 rounded-xl">
+            <span className="text-xs text-gray-400 dark:text-slate-500 font-medium italic">No active AIs in chat</span>
           </div>
         ) : (
           activeParticipants.map((participant, index) => {
@@ -159,33 +159,33 @@ export function AiStatusPanel({ participants, onReorder }: AiStatusPanelProps) {
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, index)}
                 className={cn(
-                  'flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-sm bg-white', 
+                  'flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-sm bg-white dark:bg-slate-900 dark:border-slate-850', 
                   colors.bg
                 )}
                 title="Drag to change reply sequence"
               >
                 <div className="flex items-center space-x-3 min-w-0">
                   <div className="relative flex-shrink-0">
-                    <div className="p-2 rounded-lg bg-white shadow-sm border border-gray-100/80">
+                    <div className="p-2 rounded-lg bg-white dark:bg-slate-950 shadow-sm border border-gray-100/80 dark:border-slate-850">
                       <Icon className={cn("w-4 h-4", colors.text)} />
                     </div>
-                    <div className={cn('absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white', statusConf.dotColor)} />
+                    <div className={cn('absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900', statusConf.dotColor)} />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-sm font-semibold text-gray-900 block truncate leading-tight">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white block truncate leading-tight">
                       {participant.name}
                     </span>
-                    <span className="text-[10px] text-gray-400 font-medium truncate block">
+                    <span className="text-[10px] text-gray-400 dark:text-slate-500 font-medium truncate block">
                       {participant.model}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2 flex-shrink-0">
-                  <Badge variant="outline" className={cn('text-[9px] font-bold px-1.5 py-0 rounded-full capitalize', colors.badge)}>
+                  <Badge variant="outline" className={cn('text-[9px] font-bold px-1.5 py-0 rounded-full capitalize dark:bg-slate-950 dark:text-slate-300 dark:border-slate-800', colors.badge)}>
                     {statusConf.label}
                   </Badge>
-                  <GripVertical className="w-4 h-4 text-gray-400 cursor-grab" />
+                  <GripVertical className="w-4 h-4 text-gray-400 dark:text-slate-500 cursor-grab" />
                 </div>
               </div>
             );

@@ -26,6 +26,7 @@ export interface AiParticipant {
 
 export interface Conversation {
   id: string;
+  title?: string;
   isAutoMode: boolean;
   maxAutoRounds: number;
   currentRounds: number;
@@ -85,9 +86,10 @@ export const storage = {
     return list.find(c => c.id === id) || null;
   },
 
-  createConversation(id = nanoid()): Conversation {
+  createConversation(id = nanoid(), title?: string): Conversation {
     const newConv: Conversation = {
       id,
+      title: title || `Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`,
       isAutoMode: false,
       maxAutoRounds: 10,
       currentRounds: 0,
@@ -112,6 +114,18 @@ export const storage = {
     list[idx] = updated;
     localStorage.setItem(STORAGE_KEYS.CONVERSATIONS, JSON.stringify(list));
     return updated;
+  },
+
+  deleteConversation(id: string): void {
+    const list = this.getConversations();
+    const filtered = list.filter(c => c.id !== id);
+    localStorage.setItem(STORAGE_KEYS.CONVERSATIONS, JSON.stringify(filtered));
+    
+    // Also delete linked messages
+    const data = localStorage.getItem(STORAGE_KEYS.MESSAGES);
+    const msgs: Message[] = data ? JSON.parse(data) : [];
+    const filteredMsgs = msgs.filter(m => m.conversationId !== id);
+    localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(filteredMsgs));
   },
 
   // --- Messages ---
