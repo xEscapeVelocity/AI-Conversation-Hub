@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "AI-Conversation-Hub",
-  "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "productName": "Council",
+  "version": "1.3.0",
+  "identifier": "com.council.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -12,9 +12,9 @@
   "app": {
     "windows": [
       {
-        "title": "AI Conversation Hub",
-        "width": 800,
-        "height": 600,
+        "title": "Council.",
+        "width": 1024,
+        "height": 768,
         "resizable": true,
         "fullscreen": false
       }
