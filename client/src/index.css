@@ -171,3 +171,242 @@
 .dark .text-gray-400 {
   color: hsl(240, 5%, 44.9%) !important;
 }
+
+/* ========================================================
+   GLASSMORPHISM & ACCENT COLOR THEME SYSTEM
+   ======================================================== */
+
+/* Root orb colors default to Blue theme */
+:root {
+  --orb-color-1: rgba(59, 130, 246, 0.22);
+  --orb-color-2: rgba(139, 92, 246, 0.18);
+  --orb-color-3: rgba(6, 182, 212, 0.15);
+  
+  --primary-accent: hsl(207, 90%, 54%);
+}
+
+.dark {
+  --orb-color-1: rgba(30, 58, 138, 0.25);
+  --orb-color-2: rgba(76, 29, 149, 0.2);
+  --orb-color-3: rgba(21, 94, 117, 0.15);
+}
+
+/* 12 Accent Colors Mappings */
+.accent-blue {
+  --orb-color-1: rgba(59, 130, 246, 0.25);
+  --orb-color-2: rgba(6, 182, 212, 0.2);
+  --orb-color-3: rgba(147, 51, 234, 0.15);
+  --primary-accent: hsl(217, 91%, 60%);
+}
+.accent-green {
+  --orb-color-1: rgba(16, 185, 129, 0.25);
+  --orb-color-2: rgba(34, 197, 94, 0.2);
+  --orb-color-3: rgba(234, 179, 8, 0.12);
+  --primary-accent: hsl(142, 76%, 36%);
+}
+.accent-red {
+  --orb-color-1: rgba(239, 68, 68, 0.25);
+  --orb-color-2: rgba(244, 63, 94, 0.2);
+  --orb-color-3: rgba(249, 115, 22, 0.15);
+  --primary-accent: hsl(0, 84%, 60%);
+}
+.accent-yellow {
+  --orb-color-1: rgba(234, 179, 8, 0.25);
+  --orb-color-2: rgba(249, 115, 22, 0.2);
+  --orb-color-3: rgba(16, 185, 129, 0.15);
+  --primary-accent: hsl(45, 93%, 47%);
+}
+.accent-purple {
+  --orb-color-1: rgba(168, 85, 247, 0.25);
+  --orb-color-2: rgba(236, 72, 153, 0.2);
+  --orb-color-3: rgba(59, 130, 241, 0.15);
+  --primary-accent: hsl(271, 91%, 65%);
+}
+.accent-slate {
+  --orb-color-1: rgba(100, 116, 139, 0.25);
+  --orb-color-2: rgba(71, 85, 105, 0.2);
+  --orb-color-3: rgba(148, 163, 184, 0.15);
+  --primary-accent: hsl(215, 16%, 47%);
+}
+.accent-teal {
+  --orb-color-1: rgba(20, 184, 166, 0.25);
+  --orb-color-2: rgba(6, 182, 212, 0.2);
+  --orb-color-3: rgba(34, 197, 94, 0.15);
+  --primary-accent: hsl(173, 80%, 40%);
+}
+.accent-pink {
+  --orb-color-1: rgba(236, 72, 153, 0.25);
+  --orb-color-2: rgba(244, 63, 94, 0.2);
+  --orb-color-3: rgba(168, 85, 247, 0.15);
+  --primary-accent: hsl(330, 81%, 60%);
+}
+.accent-orange {
+  --orb-color-1: rgba(249, 115, 22, 0.25);
+  --orb-color-2: rgba(239, 68, 68, 0.2);
+  --orb-color-3: rgba(234, 179, 8, 0.15);
+  --primary-accent: hsl(24, 95%, 53%);
+}
+.accent-indigo {
+  --orb-color-1: rgba(99, 102, 241, 0.25);
+  --orb-color-2: rgba(168, 85, 247, 0.2);
+  --orb-color-3: rgba(59, 130, 246, 0.15);
+  --primary-accent: hsl(239, 84%, 66%);
+}
+.accent-mint {
+  --orb-color-1: rgba(52, 211, 153, 0.25);
+  --orb-color-2: rgba(45, 212, 191, 0.2);
+  --orb-color-3: rgba(186, 230, 253, 0.15);
+  --primary-accent: hsl(158, 64%, 42%);
+}
+.accent-rose {
+  --orb-color-1: rgba(251, 113, 133, 0.25);
+  --orb-color-2: rgba(244, 63, 94, 0.2);
+  --orb-color-3: rgba(253, 186, 116, 0.15);
+  --primary-accent: hsl(343, 85%, 62%);
+}
+
+/* Dynamic Aurora Orbs Animations */
+@keyframes aurora-slow {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33% { transform: translate(6vw, 4vh) scale(1.15) rotate(120deg); }
+  66% { transform: translate(-3vw, 8vh) scale(0.9) rotate(240deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(360deg); }
+}
+
+@keyframes aurora-reverse {
+  0% { transform: translate(0, 0) scale(1.05) rotate(360deg); }
+  33% { transform: translate(-5vw, -6vh) scale(0.9) rotate(240deg); }
+  66% { transform: translate(8vw, -3vh) scale(1.1) rotate(120deg); }
+  100% { transform: translate(0, 0) scale(1.05) rotate(0deg); }
+}
+
+@keyframes aurora-mid {
+  0% { transform: translate(0, 0) scale(0.9) rotate(0deg); }
+  50% { transform: translate(-4vw, 5vh) scale(1.1) rotate(180deg); }
+  100% { transform: translate(0, 0) scale(0.9) rotate(360deg); }
+}
+
+.animate-aurora-slow {
+  animation: aurora-slow 28s infinite ease-in-out;
+}
+.animate-aurora-reverse {
+  animation: aurora-reverse 34s infinite ease-in-out;
+}
+.animate-aurora-mid {
+  animation: aurora-mid 24s infinite ease-in-out;
+}
+
+/* Glassmorphism Panel styles */
+.theme-glass .glass-panel {
+  background: rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04) !important;
+}
+
+.dark.theme-glass .glass-panel {
+  background: rgba(15, 23, 42, 0.42) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Glass inputs */
+.theme-glass .glass-input {
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(8px) !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+}
+.dark.theme-glass .glass-input {
+  background: rgba(15, 23, 42, 0.55) !important;
+  backdrop-filter: blur(8px) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Dynamic Gradient background for main wrapper */
+.bg-background-gradient {
+  background-color: hsl(240, 5%, 98%);
+  transition: background 0.4s ease, color 0.4s ease;
+}
+.dark .bg-background-gradient {
+  background-color: hsl(240, 10%, 3.9%);
+}
+
+.theme-glass .bg-background-gradient {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+}
+.dark.theme-glass .bg-background-gradient {
+  background: linear-gradient(135deg, #090d16 0%, #030712 100%) !important;
+}
+
+/* Message styling overrides for glassmorphism */
+/* Glossy glass bubble (high shine, bright top highlights, transparent) */
+.theme-glass .glass-gloss {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.22) 100%) !important;
+  backdrop-filter: blur(10px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(130%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  border-top-color: rgba(255, 255, 255, 0.75) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  color: #0f172a !important;
+}
+.dark.theme-glass .glass-gloss {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.55) 0%, rgba(15, 23, 42, 0.35) 100%) !important;
+  backdrop-filter: blur(10px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(130%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-top-color: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  color: #f8fafc !important;
+}
+
+/* Matte glass bubble (frosty, diffused, higher opacity, no sharp highlights) */
+.theme-glass .glass-matte {
+  background: rgba(255, 255, 255, 0.28) !important;
+  backdrop-filter: blur(16px) saturate(100%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.01) !important;
+  color: #1e293b !important;
+}
+.dark.theme-glass .glass-matte {
+  background: rgba(15, 23, 42, 0.42) !important;
+  backdrop-filter: blur(16px) saturate(100%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12) !important;
+  color: #e2e8f0 !important;
+}
+
+/* Make sure active borders in settings show accent */
+.theme-glass.accent-blue .border-indigo-100 { border-color: rgba(59, 130, 246, 0.4) !important; }
+.theme-glass.accent-green .border-indigo-100 { border-color: rgba(16, 185, 129, 0.4) !important; }
+.theme-glass.accent-red .border-indigo-100 { border-color: rgba(239, 68, 68, 0.4) !important; }
+.theme-glass.accent-yellow .border-indigo-100 { border-color: rgba(234, 179, 8, 0.4) !important; }
+.theme-glass.accent-purple .border-indigo-100 { border-color: rgba(168, 85, 247, 0.4) !important; }
+.theme-glass.accent-slate .border-indigo-100 { border-color: rgba(100, 116, 139, 0.4) !important; }
+.theme-glass.accent-teal .border-indigo-100 { border-color: rgba(20, 184, 166, 0.4) !important; }
+.theme-glass.accent-pink .border-indigo-100 { border-color: rgba(236, 72, 153, 0.4) !important; }
+.theme-glass.accent-orange .border-indigo-100 { border-color: rgba(249, 115, 22, 0.4) !important; }
+.theme-glass.accent-indigo .border-indigo-100 { border-color: rgba(99, 102, 241, 0.4) !important; }
+.theme-glass.accent-mint .border-indigo-100 { border-color: rgba(52, 211, 153, 0.4) !important; }
+.theme-glass.accent-rose .border-indigo-100 { border-color: rgba(251, 113, 133, 0.4) !important; }
+
+/* Global scrollbar adjustments for glass theme */
+.theme-glass ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.theme-glass ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 9999px;
+}
+.theme-glass ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 9999px;
+}
+.dark.theme-glass ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}

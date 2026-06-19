@@ -17,6 +17,7 @@ interface ChatMessageProps {
   content: string;
   sender: string;
   timestamp: Date;
+  index: number;
 }
 
 const iconMap: Record<string, any> = {
@@ -76,7 +77,7 @@ const colorMap: Record<string, { bg: string; border: string; text: string; shado
   }
 };
 
-export function ChatMessage({ content, sender, timestamp }: ChatMessageProps) {
+export function ChatMessage({ content, sender, timestamp, index }: ChatMessageProps) {
   const isUser = sender.toLowerCase() === 'user' || sender === 'You';
   
   // Find AI settings in storage
@@ -95,8 +96,11 @@ export function ChatMessage({ content, sender, timestamp }: ChatMessageProps) {
     ? 'bg-purple-600 text-white shadow-sm shadow-purple-100/50 dark:shadow-none rounded-2xl rounded-tr-none border border-purple-700/10' 
     : 'bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 shadow-sm rounded-2xl rounded-tl-none text-gray-800 dark:text-slate-100';
 
+  const isGloss = index % 2 === 0;
+  const glassStyle = isGloss ? 'glass-gloss' : 'glass-matte';
+
   return (
-    <div className={cn('flex items-start space-x-3.5', isUser && 'flex-row-reverse space-x-reverse')}>
+    <div className={cn('flex items-start space-x-3.5 chat-message-item', isUser && 'flex-row-reverse space-x-reverse')}>
       <div className={cn('w-8.5 h-8.5 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm border border-black/5 text-white', colors.bg)}>
         <Icon className="text-white text-sm" size={16} />
       </div>
@@ -107,7 +111,7 @@ export function ChatMessage({ content, sender, timestamp }: ChatMessageProps) {
             {format(timestamp, 'h:mm a')}
           </span>
         </div>
-        <div className={cn('p-3.5 text-sm leading-relaxed whitespace-pre-wrap', messageStyle)}>
+        <div className={cn('p-3.5 text-sm leading-relaxed whitespace-pre-wrap message-content-bubble', messageStyle, glassStyle)}>
           {content}
         </div>
       </div>

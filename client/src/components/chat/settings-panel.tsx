@@ -1,14 +1,295 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Eye, EyeOff, Save, Plus, Edit2, Trash2, ArrowLeft, Bot, Sparkles, Cpu, Download, Upload, RefreshCw } from 'lucide-react';
+import { X, Eye, EyeOff, Save, Plus, Edit2, Trash2, ArrowLeft, Bot, Sparkles, Cpu, Download, Upload, RefreshCw, ChevronDown, ChevronUp, ExternalLink, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { AiParticipant, storage } from '@/lib/storage';
+
+interface AiPreset {
+  name: string;
+  provider: string;
+  category: 'Google Gemini' | 'OpenAI Direct' | 'Anthropic (OpenRouter)' | 'DeepSeek Direct' | 'Groq Cloud' | 'Mistral AI' | 'Local / Offline';
+  apiType: 'gemini' | 'openai-compatible';
+  apiUrl: string;
+  model: string;
+  systemPrompt: string;
+  apiKeyLink: string;
+  icon: string;
+  color: string;
+}
+
+const AI_PRESETS: AiPreset[] = [
+  // --- Google Gemini ---
+  {
+    name: 'Gemini 2.5 Flash',
+    provider: 'Google',
+    category: 'Google Gemini',
+    apiType: 'gemini',
+    apiUrl: 'https://generativelanguage.googleapis.com',
+    model: 'gemini-2.5-flash',
+    systemPrompt: 'You are Gemini 2.5 Flash, a fast and smart assistant. Keep responses concise, collaborative, and helpful.',
+    apiKeyLink: 'https://aistudio.google.com/',
+    icon: 'sparkles',
+    color: 'blue'
+  },
+  {
+    name: 'Gemini 2.5 Pro',
+    provider: 'Google',
+    category: 'Google Gemini',
+    apiType: 'gemini',
+    apiUrl: 'https://generativelanguage.googleapis.com',
+    model: 'gemini-2.5-pro',
+    systemPrompt: 'You are Gemini 2.5 Pro, a deep reasoning assistant. Keep responses thoughtful, highly analytical, and clear.',
+    apiKeyLink: 'https://aistudio.google.com/',
+    icon: 'sparkles',
+    color: 'indigo'
+  },
+  {
+    name: 'Gemini 1.5 Flash',
+    provider: 'Google',
+    category: 'Google Gemini',
+    apiType: 'gemini',
+    apiUrl: 'https://generativelanguage.googleapis.com',
+    model: 'gemini-1.5-flash',
+    systemPrompt: 'You are Gemini 1.5 Flash, a versatile assistant. Keep responses conversational and direct.',
+    apiKeyLink: 'https://aistudio.google.com/',
+    icon: 'sparkles',
+    color: 'blue'
+  },
+  {
+    name: 'Gemini 1.5 Pro',
+    provider: 'Google',
+    category: 'Google Gemini',
+    apiType: 'gemini',
+    apiUrl: 'https://generativelanguage.googleapis.com',
+    model: 'gemini-1.5-pro',
+    systemPrompt: 'You are Gemini 1.5 Pro, an advanced analytical agent. Provide thorough and logical explanations.',
+    apiKeyLink: 'https://aistudio.google.com/',
+    icon: 'sparkles',
+    color: 'indigo'
+  },
+
+  // --- OpenAI Direct ---
+  {
+    name: 'GPT-4o',
+    provider: 'OpenAI',
+    category: 'OpenAI Direct',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://api.openai.com/v1',
+    model: 'gpt-4o',
+    systemPrompt: 'You are GPT-4o, a highly capable conversational assistant. Provide structured, accurate, and detailed replies.',
+    apiKeyLink: 'https://platform.openai.com/api-keys',
+    icon: 'cpu',
+    color: 'purple'
+  },
+  {
+    name: 'GPT-4o-mini',
+    provider: 'OpenAI',
+    category: 'OpenAI Direct',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://api.openai.com/v1',
+    model: 'gpt-4o-mini',
+    systemPrompt: 'You are GPT-4o-mini, a fast and cost-efficient assistant. Keep replies focused, brief, and logical.',
+    apiKeyLink: 'https://platform.openai.com/api-keys',
+    icon: 'cpu',
+    color: 'purple'
+  },
+  {
+    name: 'o1-mini',
+    provider: 'OpenAI',
+    category: 'OpenAI Direct',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://api.openai.com/v1',
+    model: 'o1-mini',
+    systemPrompt: 'You are o1-mini, a reasoning assistant. Explain your thought process logically and build on previous messages.',
+    apiKeyLink: 'https://platform.openai.com/api-keys',
+    icon: 'code',
+    color: 'purple'
+  },
+  {
+    name: 'o1-preview',
+    provider: 'OpenAI',
+    category: 'OpenAI Direct',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://api.openai.com/v1',
+    model: 'o1-preview',
+    systemPrompt: 'You are o1-preview, an advanced reasoning model. Approach complex problems step-by-step and write detailed code/explanations.',
+    apiKeyLink: 'https://platform.openai.com/api-keys',
+    icon: 'code',
+    color: 'purple'
+  },
+
+  // --- Anthropic via OpenRouter ---
+  {
+    name: 'Claude 3.5 Sonnet',
+    provider: 'Anthropic via OpenRouter',
+    category: 'Anthropic (OpenRouter)',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://openrouter.ai/api/v1',
+    model: 'anthropic/claude-3.5-sonnet',
+    systemPrompt: 'You are Claude 3.5 Sonnet, a highly creative and articulate assistant. Keep your responses engaging, eloquent, and build on others ideas.',
+    apiKeyLink: 'https://openrouter.ai/keys',
+    icon: 'bot',
+    color: 'rose'
+  },
+  {
+    name: 'Claude 3.5 Haiku',
+    provider: 'Anthropic via OpenRouter',
+    category: 'Anthropic (OpenRouter)',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://openrouter.ai/api/v1',
+    model: 'anthropic/claude-3.5-haiku',
+    systemPrompt: 'You are Claude 3.5 Haiku, a quick and clever assistant. Keep your answers direct, lively, and to-the-point.',
+    apiKeyLink: 'https://openrouter.ai/keys',
+    icon: 'bot',
+    color: 'rose'
+  },
+  {
+    name: 'Claude 3 Opus',
+    provider: 'Anthropic via OpenRouter',
+    category: 'Anthropic (OpenRouter)',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://openrouter.ai/api/v1',
+    model: 'anthropic/claude-3-opus',
+    systemPrompt: 'You are Claude 3 Opus, an exceptionally deep and nuanced thinking model. Synthesize details from the entire conversation.',
+    apiKeyLink: 'https://openrouter.ai/keys',
+    icon: 'bot',
+    color: 'rose'
+  },
+
+  // --- DeepSeek Direct ---
+  {
+    name: 'DeepSeek Chat (V3)',
+    provider: 'DeepSeek',
+    category: 'DeepSeek Direct',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://api.deepseek.com/v1',
+    model: 'deepseek-chat',
+    systemPrompt: 'You are DeepSeek Chat, a highly smart and efficient assistant. Provide clear, direct, and well-structured responses.',
+    apiKeyLink: 'https://platform.deepseek.com/api_keys',
+    icon: 'terminal',
+    color: 'emerald'
+  },
+  {
+    name: 'DeepSeek Coder',
+    provider: 'DeepSeek',
+    category: 'DeepSeek Direct',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://api.deepseek.com/v1',
+    model: 'deepseek-coder',
+    systemPrompt: 'You are DeepSeek Coder, a specialized assistant for programming and technical queries. Write clean, comments-explained code.',
+    apiKeyLink: 'https://platform.deepseek.com/api_keys',
+    icon: 'code',
+    color: 'emerald'
+  },
+
+  // --- Groq Cloud ---
+  {
+    name: 'Llama 3.3 70B (Groq)',
+    provider: 'Groq',
+    category: 'Groq Cloud',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://api.groq.com/openai/v1',
+    model: 'llama-3.3-70b-specdec',
+    systemPrompt: 'You are Llama 3.3 70B via Groq. Be fast, direct, conversational, and provide structured explanations.',
+    apiKeyLink: 'https://console.groq.com/keys',
+    icon: 'zap',
+    color: 'orange'
+  },
+  {
+    name: 'Mixtral 8x7B (Groq)',
+    provider: 'Groq',
+    category: 'Groq Cloud',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://api.groq.com/openai/v1',
+    model: 'mixtral-8x7b-32768',
+    systemPrompt: 'You are Mixtral 8x7B. Provide logical, well-structured, and helpful answers.',
+    apiKeyLink: 'https://console.groq.com/keys',
+    icon: 'zap',
+    color: 'amber'
+  },
+  {
+    name: 'Llama 3.1 8B (Groq)',
+    provider: 'Groq',
+    category: 'Groq Cloud',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://api.groq.com/openai/v1',
+    model: 'llama-3.1-8b-instant',
+    systemPrompt: 'You are Llama 3.1 8B, a lightweight and speedy conversational agent. Keep replies short and casual.',
+    apiKeyLink: 'https://console.groq.com/keys',
+    icon: 'zap',
+    color: 'orange'
+  },
+
+  // --- Mistral AI ---
+  {
+    name: 'Mistral Large',
+    provider: 'Mistral AI',
+    category: 'Mistral AI',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://api.mistral.ai/v1',
+    model: 'mistral-large-latest',
+    systemPrompt: 'You are Mistral Large, a high-quality model designed for complex multi-lingual reasoning and coding.',
+    apiKeyLink: 'https://console.mistral.ai/api-keys',
+    icon: 'messagesquare',
+    color: 'amber'
+  },
+  {
+    name: 'Mistral Codestral',
+    provider: 'Mistral AI',
+    category: 'Mistral AI',
+    apiType: 'openai-compatible',
+    apiUrl: 'https://api.mistral.ai/v1',
+    model: 'codestral-latest',
+    systemPrompt: 'You are Codestral, Mistral\'s premier code generation model. Provide direct programming solutions.',
+    apiKeyLink: 'https://console.mistral.ai/api-keys',
+    icon: 'code',
+    color: 'amber'
+  },
+
+  // --- Local / Offline ---
+  {
+    name: 'Local Llama 3 (Ollama)',
+    provider: 'Ollama',
+    category: 'Local / Offline',
+    apiType: 'openai-compatible',
+    apiUrl: 'http://localhost:11434/v1',
+    model: 'llama3',
+    systemPrompt: 'You are a local Llama 3 model running offline. Keep your responses short and direct.',
+    apiKeyLink: 'https://ollama.com/',
+    icon: 'terminal',
+    color: 'emerald'
+  },
+  {
+    name: 'Local Mistral (Ollama)',
+    provider: 'Ollama',
+    category: 'Local / Offline',
+    apiType: 'openai-compatible',
+    apiUrl: 'http://localhost:11434/v1',
+    model: 'mistral',
+    systemPrompt: 'You are a local Mistral model running offline. Provide direct and helpful answers.',
+    apiKeyLink: 'https://ollama.com/',
+    icon: 'terminal',
+    color: 'emerald'
+  },
+  {
+    name: 'LM Studio Server',
+    provider: 'LM Studio',
+    category: 'Local / Offline',
+    apiType: 'openai-compatible',
+    apiUrl: 'http://localhost:1234/v1',
+    model: 'lmstudio',
+    systemPrompt: 'You are a local model running in LM Studio. Provide helpful, structured answers.',
+    apiKeyLink: 'https://lmstudio.ai/',
+    icon: 'cpu',
+    color: 'indigo'
+  }
+];
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -25,6 +306,12 @@ interface SettingsPanelProps {
     creditSaver?: boolean;
   };
   onSettingsChange: (settings: any) => void;
+  theme: 'light' | 'dark';
+  onThemeChange: (theme: 'light' | 'dark') => void;
+  themeStyle: 'standard' | 'glass';
+  onThemeStyleChange: (style: 'standard' | 'glass') => void;
+  themeColor: string;
+  onThemeColorChange: (color: string) => void;
 }
 
 export function SettingsPanel({
@@ -34,6 +321,12 @@ export function SettingsPanel({
   onParticipantsChange,
   settings,
   onSettingsChange,
+  theme,
+  onThemeChange,
+  themeStyle,
+  onThemeStyleChange,
+  themeColor,
+  onThemeColorChange,
 }: SettingsPanelProps) {
   const { toast } = useToast();
   
@@ -45,6 +338,8 @@ export function SettingsPanel({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [isScanning, setIsScanning] = useState(false);
+  const [isCatalogExpanded, setIsCatalogExpanded] = useState(false);
+  const apiKeyInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -236,7 +531,7 @@ export function SettingsPanel({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `aiconvohub-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `council-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
 
@@ -296,15 +591,43 @@ export function SettingsPanel({
     reader.readAsText(file);
   };
 
+  const handleApplyPreset = (preset: AiPreset) => {
+    setEditingAi({
+      name: preset.name,
+      apiType: preset.apiType,
+      apiUrl: preset.apiUrl,
+      apiKey: '',
+      model: preset.model,
+      systemPrompt: preset.systemPrompt,
+      icon: preset.icon,
+      color: preset.color,
+      isActive: true
+    });
+    setErrors({});
+    toast({
+      title: 'Preset Applied',
+      description: `Configured fields for ${preset.name}. Please enter your API key to save.`,
+    });
+    setTimeout(() => {
+      apiKeyInputRef.current?.focus();
+    }, 100);
+  };
+
   return (
     <>
       {/* Mobile overlay */}
       <div className="lg:hidden fixed inset-0 bg-black bg-opacity-40 z-50 transition-opacity" onClick={onClose} />
 
-      <div className="fixed lg:relative inset-y-0 right-0 lg:right-auto w-full max-w-md lg:w-96 bg-white border-l border-gray-150 z-50 lg:z-auto flex flex-col h-full shadow-2xl lg:shadow-none transition-transform duration-300">
+      <div className={cn(
+        "fixed lg:relative inset-y-0 right-0 lg:right-auto w-full max-w-md lg:w-96 z-50 lg:z-auto flex flex-col h-full shadow-2xl lg:shadow-none transition-transform duration-300",
+        themeStyle === 'glass' ? "glass-panel" : "bg-white border-l border-gray-150"
+      )}>
         
         {/* Settings Header */}
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+        <div className={cn(
+          "p-5 flex items-center justify-between",
+          themeStyle === 'glass' ? "border-b border-gray-150 dark:border-slate-850" : "border-b border-gray-100 bg-gray-50/50"
+        )}>
           {editingAi ? (
             <button 
               onClick={() => setEditingAi(null)}
@@ -400,6 +723,7 @@ export function SettingsPanel({
                 <Label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase">API Key / Token</Label>
                 <div className="relative">
                   <Input
+                    ref={apiKeyInputRef}
                     type={showKey ? 'text' : 'password'}
                     placeholder="Enter API Secret key (optional for local models)"
                     value={editingAi.apiKey || ''}
@@ -583,8 +907,186 @@ export function SettingsPanel({
                 </div>
               </div>
 
+              {/* AI Preset Catalog */}
+              <div className="border-t border-gray-100 dark:border-slate-800 pt-5 space-y-3">
+                <button
+                  onClick={() => setIsCatalogExpanded(!isCatalogExpanded)}
+                  className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 hover:text-indigo-600 transition-colors"
+                >
+                  <span className="flex items-center">
+                    <Sparkles className="w-4.5 h-4.5 mr-2 text-indigo-500 animate-pulse" />
+                    AI Preset Catalog
+                  </span>
+                  {isCatalogExpanded ? <ChevronUp className="w-4.5 h-4.5" /> : <ChevronDown className="w-4.5 h-4.5" />}
+                </button>
+                
+                {isCatalogExpanded && (() => {
+                  const presetsByCategory = AI_PRESETS.reduce((acc, preset) => {
+                    if (!acc[preset.category]) {
+                      acc[preset.category] = [];
+                    }
+                    acc[preset.category].push(preset);
+                    return acc;
+                  }, {} as Record<string, typeof AI_PRESETS[0][]>);
+
+                  return (
+                    <div className="space-y-3.5 pt-1.5 animate-fade-in">
+                      <p className="text-[10px] text-gray-500 leading-normal">
+                        Quickly add popular AI models to your Council. Click **Apply** to pre-populate details, then enter your API key to save! Get keys from the links.
+                      </p>
+                      <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
+                        {Object.entries(presetsByCategory).map(([category, items]) => (
+                          <div key={category} className="space-y-2">
+                            <h4 className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider pl-1 pt-1">
+                              {category}
+                            </h4>
+                            <div className="space-y-2">
+                              {items.map((preset) => (
+                                <div 
+                                  key={preset.name}
+                                  className="p-3 rounded-xl border border-gray-100 dark:border-slate-800/80 bg-gray-50/30 dark:bg-slate-950/20 hover:border-indigo-100 transition-colors flex items-center justify-between"
+                                >
+                                  <div className="min-w-0 flex-1 pr-3">
+                                    <div className="flex items-center space-x-1.5">
+                                      <span className="font-semibold text-xs text-gray-800 dark:text-slate-200">{preset.name}</span>
+                                    </div>
+                                    <p className="text-[9px] text-gray-400 truncate mt-0.5 font-mono">{preset.model}</p>
+                                  </div>
+                                  
+                                  <div className="flex items-center space-x-2 flex-shrink-0">
+                                    <a 
+                                      href={preset.apiKeyLink} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center"
+                                      title={`Get ${preset.provider} API Key`}
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                    </a>
+                                    <Button
+                                      onClick={() => handleApplyPreset(preset)}
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 text-[10px] font-bold text-indigo-600 border-indigo-100 hover:bg-indigo-50 dark:hover:bg-slate-800 dark:border-slate-800 px-2 rounded-lg"
+                                    >
+                                      Apply
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Appearance & Themes */}
+              <div className="border-t border-gray-100 dark:border-slate-800 pt-5 space-y-4">
+                <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                  <Layers className="w-4.5 h-4.5 text-indigo-650 dark:text-indigo-400 mr-2" />
+                  Appearance & Themes
+                </h3>
+
+                {/* Theme Style: Standard vs Glass */}
+                <div className="space-y-2">
+                  <Label className="block text-xs font-semibold text-gray-600 uppercase">Theme Interface Style</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant={themeStyle === 'standard' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => onThemeStyleChange('standard')}
+                      className="text-xs rounded-xl font-bold h-9"
+                    >
+                      Standard Matte
+                    </Button>
+                    <Button
+                      variant={themeStyle === 'glass' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => onThemeStyleChange('glass')}
+                      className="text-xs rounded-xl font-bold h-9"
+                    >
+                      Aero Glassmorphism
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Theme Mode: Light vs Dark */}
+                <div className="space-y-2">
+                  <Label className="block text-xs font-semibold text-gray-600 uppercase">Theme Color Mode</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant={theme === 'light' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => onThemeChange('light')}
+                      className="text-xs rounded-xl font-bold h-9"
+                    >
+                      Light Mode
+                    </Button>
+                    <Button
+                      variant={theme === 'dark' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => onThemeChange('dark')}
+                      className="text-xs rounded-xl font-bold h-9"
+                    >
+                      Dark Mode
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Accent Color Palette */}
+                <div className="space-y-2.5">
+                  <Label className="block text-xs font-semibold text-gray-600 uppercase">Accent Theme Color</Label>
+                  <div className="grid grid-cols-4 gap-2.5">
+                    {[
+                      { id: 'blue', hex: '#3B82F6', label: 'Blue' },
+                      { id: 'green', hex: '#10B981', label: 'Green' },
+                      { id: 'red', hex: '#EF4444', label: 'Red' },
+                      { id: 'yellow', hex: '#F59E0B', label: 'Yellow' },
+                      { id: 'purple', hex: '#8B5CF6', label: 'Purple' },
+                      { id: 'slate', hex: '#64748B', label: 'Slate' },
+                      { id: 'teal', hex: '#14B8A6', label: 'Teal' },
+                      { id: 'pink', hex: '#EC4899', label: 'Pink' },
+                      { id: 'orange', hex: '#F97316', label: 'Orange' },
+                      { id: 'indigo', hex: '#6366F1', label: 'Indigo' },
+                      { id: 'mint', hex: '#34d399', label: 'Mint' },
+                      { id: 'rose', hex: '#FB7185', label: 'Rose' }
+                    ].map((col) => {
+                      const displayHex = col.id === 'mint' ? '#34d399' : col.hex;
+                      const isActive = themeColor === col.id;
+                      return (
+                        <button
+                          key={col.id}
+                          onClick={() => onThemeColorChange(col.id)}
+                          className={cn(
+                            "group relative h-9 rounded-xl flex items-center justify-center border transition-all duration-150 shadow-sm bg-white dark:bg-slate-900",
+                            isActive 
+                              ? "border-indigo-600 dark:border-indigo-400 ring-2 ring-indigo-500/20" 
+                              : "border-gray-200 dark:border-slate-800 hover:border-gray-400 dark:hover:border-slate-700"
+                          )}
+                          title={col.label}
+                          type="button"
+                        >
+                          <span 
+                            className="w-4.5 h-4.5 rounded-full block border border-black/5 shadow-inner" 
+                            style={{ backgroundColor: displayHex }} 
+                          />
+                          {isActive && (
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[7px] font-bold">
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
               {/* Chat & Auto Mode Settings */}
-              <div className="border-t border-gray-100 pt-5 space-y-4">
+              <div className="border-t border-gray-100 dark:border-slate-800 pt-5 space-y-4">
                 <h3 className="text-sm font-semibold text-gray-900">Conversation Controls</h3>
                 
                 {/* Delay Slider */}

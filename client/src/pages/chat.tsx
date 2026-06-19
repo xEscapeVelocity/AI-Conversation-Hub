@@ -26,8 +26,10 @@ import {
   Check,
   X,
   Sun,
-  Moon
+  Moon,
+  Layers
 } from 'lucide-react';
+import { CouncilLogo } from '@/components/chat/council-logo';
 import { nanoid } from 'nanoid';
 import { storage, Message, AiParticipant, Conversation } from '@/lib/storage';
 import { aiOrchestrator } from '@/lib/ai-orchestrator';
@@ -58,6 +60,17 @@ export default function Chat() {
     return 'light';
   });
 
+  // Glassmorphism and Accent color theme state
+  const [themeStyle, setThemeStyle] = useState<'standard' | 'glass'>(() => {
+    const saved = localStorage.getItem('themeStyle');
+    return (saved === 'standard' || saved === 'glass') ? saved : 'standard';
+  });
+
+  const [themeColor, setThemeColor] = useState<string>(() => {
+    const saved = localStorage.getItem('themeColor');
+    return saved || 'blue';
+  });
+
   useEffect(() => {
     const root = window.document.documentElement;
     if (theme === 'dark') {
@@ -67,6 +80,23 @@ export default function Chat() {
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    
+    root.classList.remove('theme-standard', 'theme-glass');
+    root.classList.add(`theme-${themeStyle}`);
+    
+    const colorClasses = [
+      'accent-blue', 'accent-green', 'accent-red', 'accent-yellow', 'accent-purple', 'accent-slate',
+      'accent-teal', 'accent-pink', 'accent-orange', 'accent-indigo', 'accent-mint', 'accent-rose'
+    ];
+    colorClasses.forEach(cls => root.classList.remove(cls));
+    root.classList.add(`accent-${themeColor}`);
+    
+    localStorage.setItem('themeStyle', themeStyle);
+    localStorage.setItem('themeColor', themeColor);
+  }, [themeStyle, themeColor]);
   
   // Multiple AIs can type in parallel
   const [typingAIs, setTypingAIs] = useState<string[]>([]);
@@ -565,18 +595,6 @@ export default function Chat() {
     triggerAllAIResponses(conversationId);
   };
 
-  const handleClearChat = () => {
-    handleStopConversation();
-    storage.clearMessages(conversationId);
-    setMessages([]);
-    startTimeRef.current = new Date();
-    setStats({ totalMessages: 0, autoRounds: 0, duration: '0m 0s' });
-    toast({
-      title: 'Chat Cleared',
-      description: 'Conversation transcript has been cleared locally.',
-    });
-  };
-
   const handleExportConversation = () => {
     const fmt = settings.exportFormat;
     let fileContent = '';
@@ -622,22 +640,34 @@ export default function Chat() {
   const activeParticipantsCount = aiParticipants.filter(p => p.isActive && p.status === 'online').length;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
+    <div className="relative flex h-screen overflow-hidden bg-background-gradient text-gray-900 dark:text-slate-100">
+      {/* Dynamic Animated Glass Aurora Orbs */}
+      {themeStyle === 'glass' && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] rounded-full bg-[var(--orb-color-1)] blur-[80px] dark:blur-[120px] animate-aurora-slow" />
+          <div className="absolute top-[30%] left-[25%] w-[40%] h-[40%] rounded-full bg-[var(--orb-color-3)] blur-[90px] dark:blur-[130px] animate-aurora-mid" />
+          <div className="absolute -bottom-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-[var(--orb-color-2)] blur-[100px] dark:blur-[150px] animate-aurora-reverse" />
+        </div>
+      )}
       
       {/* ================= COLUMN 1: LEFT SIDEBAR (Chats List) ================= */}
       <div 
         className={cn(
-          "w-64 bg-slate-900 text-white flex flex-col h-full flex-shrink-0 transition-all duration-300 border-r border-slate-950 z-30",
+          "w-64 flex flex-col h-full flex-shrink-0 transition-all duration-300 border-r border-slate-950 z-30",
+          themeStyle === 'glass' ? "glass-panel text-gray-900 dark:text-white" : "bg-slate-900 text-white",
           !isLeftSidebarOpen && "w-0 overflow-hidden border-none"
         )}
       >
         {/* App Title */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+        <div className={cn(
+          "p-5 flex items-center justify-between",
+          themeStyle === 'glass' ? "border-b border-gray-150 dark:border-slate-800/40" : "border-b border-slate-800"
+        )}>
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-md">
-              <Bot className="w-5 h-5 text-white animate-pulse" />
+            <div className="w-8 h-8 rounded-lg bg-slate-800/80 border border-slate-700/50 flex items-center justify-center shadow-md">
+              <CouncilLogo className="w-4.5 h-4.5 text-white" />
             </div>
-            <span className="font-bold text-sm tracking-wide">AI ConvoHub</span>
+            <span className="font-bold text-sm tracking-wide">Council.</span>
           </div>
         </div>
 
@@ -679,8 +709,12 @@ export default function Chat() {
                           className={cn(
                             "group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-150",
                             conv.id === conversationId 
-                              ? "bg-slate-800 text-indigo-400 font-bold border border-slate-700/50" 
-                              : "text-slate-400 hover:bg-slate-800/40 hover:text-white"
+                              ? (themeStyle === 'glass' 
+                                  ? "glass-gloss text-indigo-600 dark:text-indigo-400 font-bold" 
+                                  : "bg-slate-800 text-indigo-400 font-bold border border-slate-700/50") 
+                              : (themeStyle === 'glass'
+                                  ? "text-gray-500 dark:text-slate-400 hover:bg-white/20 dark:hover:bg-slate-800/20 hover:text-gray-900 dark:hover:text-white"
+                                  : "text-slate-400 hover:bg-slate-800/40 hover:text-white")
                           )}
                         >
                           <div className="flex items-center space-x-2.5 min-w-0 pr-2 flex-1">
@@ -700,7 +734,12 @@ export default function Chat() {
                                 }}
                                 autoFocus
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-slate-700 text-white border border-indigo-500 rounded px-1.5 py-0.5 text-xs focus:outline-none w-full"
+                                className={cn(
+                                  "rounded px-1.5 py-0.5 text-xs focus:outline-none w-full",
+                                  themeStyle === 'glass'
+                                    ? "glass-input text-gray-900 dark:text-white border border-indigo-500"
+                                    : "bg-slate-700 text-white border border-indigo-500"
+                                )}
                               />
                             ) : (
                               <span className="truncate">{conv.title}</span>
@@ -744,7 +783,10 @@ export default function Chat() {
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-gray-50/20 dark:bg-slate-950/20">
         
         {/* Chat Area Top Header */}
-        <div className="bg-white dark:bg-slate-900 border-b border-gray-150 dark:border-slate-800 p-4 flex-shrink-0 flex items-center justify-between shadow-sm z-20">
+        <div className={cn(
+          "p-4 flex-shrink-0 flex items-center justify-between shadow-sm z-20",
+          themeStyle === 'glass' ? "glass-panel" : "bg-white dark:bg-slate-900 border-b border-gray-150 dark:border-slate-800"
+        )}>
           <div className="flex items-center space-x-3">
             {/* Left Sidebar Toggle */}
             <Button 
@@ -782,6 +824,15 @@ export default function Chat() {
             >
               {theme === 'dark' ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
             </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800" 
+              onClick={() => setThemeStyle(themeStyle === 'glass' ? 'standard' : 'glass')} 
+              title={themeStyle === 'glass' ? "Switch to standard theme" : "Switch to glass theme"}
+            >
+              <Layers className={cn("w-4.5 h-4.5", themeStyle === 'glass' && "text-indigo-600 dark:text-indigo-400")} />
+            </Button>
             <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800" onClick={handleExportConversation} title="Export transcript">
               <Download className="w-4.5 h-4.5" />
             </Button>
@@ -806,9 +857,9 @@ export default function Chat() {
           <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600 dark:text-slate-400 rounded-xl" onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}>
             <PanelLeft className="w-4 h-4" />
           </Button>
-          <h1 className="text-xs font-bold text-gray-900 dark:text-white flex items-center">
-            <Bot className="text-indigo-600 mr-1.5 w-4 h-4" />
-            AI ConvoHub
+          <h1 className="text-xs font-bold text-gray-900 dark:text-white flex items-center font-bold tracking-wide">
+            <CouncilLogo className="mr-1.5 w-4.5 h-4.5" />
+            Council.
           </h1>
           <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600 dark:text-slate-400 rounded-xl" onClick={() => setIsSettingsOpen(true)}>
             <Settings className="w-4 h-4" />
@@ -829,12 +880,13 @@ export default function Chat() {
             </div>
           ) : (
             <div className="space-y-5">
-              {messages.map((message) => (
+              {messages.map((message, idx) => (
                 <ChatMessage
                   key={message.id}
                   content={message.content}
                   sender={message.sender}
                   timestamp={new Date(message.timestamp)}
+                  index={idx}
                 />
               ))}
             </div>
@@ -863,7 +915,10 @@ export default function Chat() {
         </div>
 
         {/* Message Input */}
-        <div className="bg-white dark:bg-slate-900 border-t border-gray-150 dark:border-slate-800 p-4 lg:p-5 flex-shrink-0 shadow-lg shadow-black/5 z-10">
+        <div className={cn(
+          "p-4 lg:p-5 flex-shrink-0 shadow-lg shadow-black/5 z-10",
+          themeStyle === 'glass' ? "glass-panel" : "bg-white dark:bg-slate-900 border-t border-gray-150 dark:border-slate-800"
+        )}>
           <div className="flex items-center space-x-4 max-w-4xl mx-auto">
             <div className="flex-1 relative flex items-center">
               <Input
@@ -877,7 +932,12 @@ export default function Chat() {
                 onChange={(e) => setMessageInput(e.target.value)}
                 onKeyDown={handleKeyPress}
                 disabled={activeParticipantsCount === 0}
-                className="pr-12 py-5.5 rounded-xl border-gray-250 dark:border-slate-800 bg-white dark:bg-slate-950 dark:text-white focus-visible:ring-indigo-600 text-sm shadow-sm"
+                className={cn(
+                  "pr-12 py-5.5 rounded-xl text-sm shadow-sm focus-visible:ring-indigo-600",
+                  themeStyle === 'glass'
+                    ? "glass-input text-gray-900 dark:text-white border border-gray-150 dark:border-slate-800"
+                    : "border-gray-250 dark:border-slate-800 bg-white dark:bg-slate-950 dark:text-white"
+                )}
               />
               <Button
                 onClick={handleSendMessage}
@@ -895,12 +955,16 @@ export default function Chat() {
       {/* ================= COLUMN 3: RIGHT SIDEBAR (Active Collaborators & Controls) ================= */}
       <div 
         className={cn(
-          "w-80 bg-white dark:bg-slate-900 border-l border-gray-150 dark:border-slate-800 flex flex-col h-full flex-shrink-0 transition-all duration-300 z-30",
+          "w-80 flex flex-col h-full flex-shrink-0 transition-all duration-300 z-30",
+          themeStyle === 'glass' ? "glass-panel" : "bg-white dark:bg-slate-900 border-l border-gray-150 dark:border-slate-800",
           !isRightSidebarOpen && "w-0 overflow-hidden border-none"
         )}
       >
         {/* Header */}
-        <div className="p-6 border-b border-gray-150 dark:border-slate-800 bg-gray-50/20 dark:bg-slate-950/20">
+        <div className={cn(
+          "p-6",
+          themeStyle === 'glass' ? "border-b border-gray-150 dark:border-slate-800/40" : "border-b border-gray-150 dark:border-slate-800 bg-gray-50/20 dark:bg-slate-950/20"
+        )}>
           <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center">
             <Users className="text-indigo-600 mr-2 w-4.5 h-4.5" />
             Session Hub
@@ -953,19 +1017,17 @@ export default function Chat() {
             Stop Conversation
           </Button>
 
-          <Button
-            onClick={handleClearChat}
-            variant="ghost"
-            className="w-full text-gray-500 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 text-xs font-bold rounded-xl h-10"
-          >
-            <Trash2 className="mr-2 w-3.5 h-3.5" />
-            Clear Chat History
-          </Button>
+          {/* Clear Chat button removed - users can manage chats via the sidebar */}
         </div>
 
-        {/* Conversation Stats */}
-        <div className="p-6 border-t border-gray-150 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950/30 flex-shrink-0">
-          <Card className="border-gray-150 dark:border-slate-800 shadow-none rounded-2xl bg-white dark:bg-slate-950">
+        <div className={cn(
+          "p-6 flex-shrink-0",
+          themeStyle === 'glass' ? "border-t border-gray-150 dark:border-slate-800/40" : "border-t border-gray-150 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950/30"
+        )}>
+          <Card className={cn(
+            "shadow-none rounded-2xl",
+            themeStyle === 'glass' ? "glass-panel" : "border-gray-150 dark:border-slate-800 bg-white dark:bg-slate-950"
+          )}>
             <CardContent className="p-4">
               <h4 className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3">Session Stats</h4>
               <div className="space-y-2 text-xs font-semibold text-gray-600 dark:text-slate-400">
@@ -995,6 +1057,12 @@ export default function Chat() {
         onParticipantsChange={setAiParticipants}
         settings={settings}
         onSettingsChange={handleSettingsChange}
+        theme={theme}
+        onThemeChange={setTheme}
+        themeStyle={themeStyle}
+        onThemeStyleChange={setThemeStyle}
+        themeColor={themeColor}
+        onThemeColorChange={setThemeColor}
       />
     </div>
   );
