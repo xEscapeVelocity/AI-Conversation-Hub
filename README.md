@@ -2,6 +2,8 @@
 
 **Council.** is a premium, open-source, serverless group chat application designed to let you talk to multiple AI agents simultaneously. Have debates, get consensus, or collaborate with custom AI configurations in a stunning, Frutiger Aero-inspired interface.
 
+*Co-created with **Antigravity** 🌌 (Google DeepMind's agentic AI coding assistant).*
+
 ![Council Interface Mockup](https://raw.githubusercontent.com/xEscapeVelocity/AI-Conversation-Hub/main/client/public/favicon.svg)
 
 ---
@@ -18,13 +20,19 @@
 
 ---
 
-##  Downloading the Desktop App (.exe)
+## 🚀 Downloads (Desktop & Mobile)
 
-You can download the standalone desktop application for Windows from the **[Releases](https://github.com/xEscapeVelocity/AI-Conversation-Hub/releases)** page.
+You can download the standalone applications from the **[Releases](https://github.com/xEscapeVelocity/AI-Conversation-Hub/releases)** page:
 
-1. Download **`Council_1.3.4_x64-setup.exe`** from the latest release.
+### 💻 Windows (.exe)
+1. Download the latest **`Council_1.3.x_x64-setup.exe`** installer.
 2. Double-click the installer and complete the setup.
 3. Open **Council.** from your desktop or start menu and start chatting!
+
+### 📱 Android (.apk)
+1. Download the latest **`app-debug.apk`** package.
+2. Send it to your phone and install it (make sure to allow installation from unknown sources).
+3. Open **Council** from your launcher and start chatting!
 
 ---
 
