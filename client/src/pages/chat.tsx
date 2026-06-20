@@ -703,6 +703,14 @@ export default function Chat() {
             </div>
             <span className="font-bold text-sm tracking-wide">Council.</span>
           </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="lg:hidden h-8 w-8 text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl"
+            onClick={() => setIsLeftSidebarOpen(false)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
 
         {/* New Chat Button */}
@@ -818,7 +826,7 @@ export default function Chat() {
         
         {/* Chat Area Top Header */}
         <div className={cn(
-          "p-4 flex-shrink-0 flex items-center justify-between shadow-sm z-20",
+          "hidden lg:flex p-4 flex-shrink-0 items-center justify-between shadow-sm z-20",
           themeStyle === 'glass' ? "glass-panel" : "bg-white dark:bg-slate-900 border-b border-gray-150 dark:border-slate-800"
         )}>
           <div className="flex items-center space-x-3">
@@ -1003,13 +1011,21 @@ export default function Chat() {
       >
         {/* Header */}
         <div className={cn(
-          "p-6",
+          "p-6 flex items-center justify-between",
           themeStyle === 'glass' ? "border-b border-gray-150 dark:border-slate-800/40" : "border-b border-gray-150 dark:border-slate-800 bg-gray-50/20 dark:bg-slate-950/20"
         )}>
           <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center">
             <Users className="text-indigo-600 mr-2 w-4.5 h-4.5" />
             Session Hub
           </h2>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="lg:hidden h-8 w-8 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl"
+            onClick={() => setIsRightSidebarOpen(false)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
 
         {/* AI Status Panel */}

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">AI Conversation Hub</string>
-    <string name="title_activity_main">AI Conversation Hub</string>
-    <string name="package_name">com.aiconversationhub.app</string>
-    <string name="custom_url_scheme">com.aiconversationhub.app</string>
+    <string name="app_name">Council.</string>
+    <string name="title_activity_main">Council.</string>
+    <string name="package_name">com.council.app</string>
+    <string name="custom_url_scheme">com.council.app</string>
 </resources>
