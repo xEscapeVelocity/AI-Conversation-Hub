@@ -76,3 +76,12 @@ If you'd like to run the code locally or modify it:
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
+
+---
+
+## 🔒 Security & Privacy Disclaimer
+
+**Council.** is a 100% client-side, serverless application. 
+- **Your Keys are Safe:** All API keys, settings, and chat logs are stored directly inside your browser's local sandbox (`localStorage`) or the desktop/mobile equivalent.
+- **Direct Connection:** The app communicates directly with the respective AI providers (Google, OpenAI, OpenRouter, etc.). Your credentials and data are never sent to, stored on, or shared with any third-party servers.
+- **Unofficial Interface:** This is an independent, unofficial open-source tool. Brand names and trademarks belong to their respective owners.
