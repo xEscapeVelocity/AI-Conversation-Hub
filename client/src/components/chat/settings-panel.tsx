@@ -958,6 +958,12 @@ export function SettingsPanel({
                                       href={preset.apiKeyLink} 
                                       target="_blank" 
                                       rel="noopener noreferrer"
+                                      onClick={(e) => {
+                                        if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+                                          e.preventDefault();
+                                          import('@tauri-apps/plugin-opener').then(m => m.openUrl(preset.apiKeyLink)).catch(console.error);
+                                        }
+                                      }}
                                       className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center"
                                       title={`Get ${preset.provider} API Key`}
                                     >
