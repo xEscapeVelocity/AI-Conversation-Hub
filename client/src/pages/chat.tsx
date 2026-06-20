@@ -45,8 +45,18 @@ export default function Chat() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Sidebar visibility states
-  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024;
+    }
+    return true;
+  });
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024;
+    }
+    return true;
+  });
 
   // Conversation editing states
   const [editingConvId, setEditingConvId] = useState<string | null>(null);
@@ -172,6 +182,12 @@ export default function Chat() {
     }
     
     loadChatSession(conv);
+
+    // Initial check for mobile size
+    if (window.innerWidth < 1024) {
+      setIsLeftSidebarOpen(false);
+      setIsRightSidebarOpen(false);
+    }
   }, []);
 
   // Helper to load chat states
@@ -649,13 +665,31 @@ export default function Chat() {
           <div className="absolute -bottom-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-[var(--orb-color-2)] blur-[100px] dark:blur-[150px] animate-aurora-reverse" />
         </div>
       )}
+
+      {/* Left Sidebar Mobile Backdrop */}
+      {isLeftSidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-30 transition-all duration-300"
+          onClick={() => setIsLeftSidebarOpen(false)}
+        />
+      )}
+
+      {/* Right Sidebar Mobile Backdrop */}
+      {isRightSidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-30 transition-all duration-300"
+          onClick={() => setIsRightSidebarOpen(false)}
+        />
+      )}
       
       {/* ================= COLUMN 1: LEFT SIDEBAR (Chats List) ================= */}
       <div 
         className={cn(
-          "w-64 flex flex-col h-full flex-shrink-0 transition-all duration-300 border-r border-slate-950 z-30",
+          "w-64 flex flex-col h-full flex-shrink-0 transition-all duration-300 z-40 lg:relative absolute inset-y-0 left-0 border-r border-slate-950/20 dark:border-slate-800/40",
           themeStyle === 'glass' ? "glass-panel text-gray-900 dark:text-white" : "bg-slate-900 text-white",
-          !isLeftSidebarOpen && "w-0 overflow-hidden border-none"
+          isLeftSidebarOpen 
+            ? "translate-x-0 w-64 opacity-100" 
+            : "-translate-x-full lg:-translate-x-0 lg:w-0 overflow-hidden border-none opacity-0 lg:opacity-100"
         )}
       >
         {/* App Title */}
@@ -861,9 +895,14 @@ export default function Chat() {
             <CouncilLogo className="mr-1.5 w-4.5 h-4.5" />
             Council.
           </h1>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600 dark:text-slate-400 rounded-xl" onClick={() => setIsSettingsOpen(true)}>
-            <Settings className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center space-x-1.5">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600 dark:text-slate-400 rounded-xl" onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}>
+              <Users className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600 dark:text-slate-400 rounded-xl" onClick={() => setIsSettingsOpen(true)}>
+              <Settings className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Chat Messages */}
@@ -955,9 +994,11 @@ export default function Chat() {
       {/* ================= COLUMN 3: RIGHT SIDEBAR (Active Collaborators & Controls) ================= */}
       <div 
         className={cn(
-          "w-80 flex flex-col h-full flex-shrink-0 transition-all duration-300 z-30",
+          "w-80 flex flex-col h-full flex-shrink-0 transition-all duration-300 z-40 lg:relative absolute inset-y-0 right-0",
           themeStyle === 'glass' ? "glass-panel" : "bg-white dark:bg-slate-900 border-l border-gray-150 dark:border-slate-800",
-          !isRightSidebarOpen && "w-0 overflow-hidden border-none"
+          isRightSidebarOpen 
+            ? "translate-x-0 w-80 opacity-100" 
+            : "translate-x-full lg:translate-x-0 lg:w-0 overflow-hidden border-none opacity-0 lg:opacity-100"
         )}
       >
         {/* Header */}
