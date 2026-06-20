@@ -348,13 +348,37 @@ export function SettingsPanel({
       const updated = storage.updateAiParticipant(id, { isActive: active });
       onParticipantsChange(storage.getAiParticipants());
       toast({
-        title: active ? 'AI Activated' : 'AI Deactivated',
-        description: `${updated.name} has been ${active ? 'added to' : 'removed from'} the group chat.`,
+        title: active ? 'AI Activated' : 'AI Paused',
+        description: `"${updated.name}" has been ${active ? 'activated' : 'paused'}.`,
       });
     } catch (e: any) {
       toast({
         title: 'Error',
-        description: e.message || 'Failed to update participant.',
+        description: e.message || 'Failed to toggle AI participant.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleResetAllRateLimits = () => {
+    try {
+      const list = storage.getAiParticipants();
+      const updatedList = list.map(p => {
+        if (p.status === 'rate_limited') {
+          return { ...p, status: 'online' as const, rateLimitUsage: 0, lastActive: new Date().toISOString() };
+        }
+        return p;
+      });
+      storage.saveAiParticipants(updatedList);
+      onParticipantsChange(updatedList);
+      toast({
+        title: 'Rate Limits Reset',
+        description: 'All rate-limited AI models have been set back to Online.',
+      });
+    } catch (e: any) {
+      toast({
+        title: 'Error',
+        description: e.message || 'Failed to reset rate limits.',
         variant: 'destructive',
       });
     }
@@ -407,11 +431,16 @@ export function SettingsPanel({
 
     try {
       if (editingAi.id) {
-        // Edit existing
-        storage.updateAiParticipant(editingAi.id, editingAi);
+        // Edit existing - reset status and rate limit usage on save
+        storage.updateAiParticipant(editingAi.id, {
+          ...editingAi,
+          status: 'online',
+          rateLimitUsage: 0,
+          lastActive: new Date().toISOString()
+        });
         toast({
           title: 'AI Config Updated',
-          description: `"${editingAi.name}" was saved successfully.`,
+          description: `"${editingAi.name}" was saved and status reset to Online.`,
         });
       } else {
         // Add new
@@ -1223,7 +1252,19 @@ export function SettingsPanel({
 
               {/* Status and Health Check indicators */}
               <div className="border-t border-gray-100 pt-5 space-y-3">
-                <h3 className="text-sm font-semibold text-gray-900">Health Monitor</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-900">Health Monitor</h3>
+                  {participants.some(p => p.status === 'rate_limited') && (
+                    <Button
+                      onClick={handleResetAllRateLimits}
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/50 px-2 rounded-lg"
+                    >
+                      Reset Limits
+                    </Button>
+                  )}
+                </div>
                 <div className="space-y-2.5">
                   {participants.filter(p => p.isActive).map((p) => (
                     <div key={p.id} className="flex items-center justify-between text-xs bg-gray-50/50 p-2 rounded-xl border border-gray-100">

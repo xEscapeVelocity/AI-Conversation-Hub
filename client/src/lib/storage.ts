@@ -163,7 +163,35 @@ export const storage = {
       localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(DEFAULT_PARTICIPANTS));
       return DEFAULT_PARTICIPANTS;
     }
-    return JSON.parse(data);
+    let participants: AiParticipant[] = JSON.parse(data);
+    
+    // Auto-reset rate limits if they've been inactive for more than 10 minutes
+    let changed = false;
+    const now = new Date();
+    participants = participants.map(p => {
+      if (p.status === 'rate_limited') {
+        const lastActiveDate = p.lastActive ? new Date(p.lastActive) : new Date(0);
+        const diffMs = now.getTime() - lastActiveDate.getTime();
+        const diffMins = diffMs / (1000 * 60);
+        
+        if (diffMins >= 10) {
+          changed = true;
+          return {
+            ...p,
+            status: 'online',
+            rateLimitUsage: 0,
+            lastActive: now.toISOString()
+          };
+        }
+      }
+      return p;
+    });
+    
+    if (changed) {
+      localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(participants));
+    }
+    
+    return participants;
   },
 
   saveAiParticipants(participants: AiParticipant[]): void {
