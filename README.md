@@ -1,4 +1,4 @@
-# Council. 🏛️
+# Council. 
 
 **Council.** is a premium, open-source, serverless group chat application designed to let you talk to multiple AI agents simultaneously. Have debates, get consensus, or collaborate with custom AI configurations in a stunning, Frutiger Aero-inspired interface.
 
@@ -6,7 +6,7 @@
 
 ---
 
-## ✨ Features
+##  Features
 
 - **Consensus Group Chat:** Talk to multiple custom AI agents at the same time in one unified chat window.
 - **Privacy First (Serverless):** Your API keys, chat history, and settings are saved locally in your browser or desktop sandbox. No servers, no tracking.
@@ -18,7 +18,7 @@
 
 ---
 
-## 🚀 Downloading the Desktop App (.exe)
+##  Downloading the Desktop App (.exe)
 
 You can download the standalone desktop application for Windows from the **[Releases](https://github.com/xEscapeVelocity/AI-Conversation-Hub/releases)** page.
 
@@ -28,7 +28,7 @@ You can download the standalone desktop application for Windows from the **[Rele
 
 ---
 
-## 🛠️ Local Development
+##  Local Development
 
 If you'd like to run the code locally or modify it:
 
