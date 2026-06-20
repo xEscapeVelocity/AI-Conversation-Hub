@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.aiconversationhub.app',
-  appName: 'AI Conversation Hub',
+  appId: 'com.council.app',
+  appName: 'Council',
   webDir: 'dist'
 };
 
