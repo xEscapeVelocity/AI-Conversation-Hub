@@ -85,3 +85,22 @@ This project is licensed under the [MIT License](LICENSE) - see the LICENSE file
 - **Your Keys are Safe:** All API keys, settings, and chat logs are stored directly inside your browser's local sandbox (`localStorage`) or the desktop/mobile equivalent.
 - **Direct Connection:** The app communicates directly with the respective AI providers (Google, OpenAI, OpenRouter, etc.). Your credentials and data are never sent to, stored on, or shared with any third-party servers.
 - **Unofficial Interface:** This is an independent, unofficial open-source tool. Brand names and trademarks belong to their respective owners.
+
+---
+
+## 🛠️ Development
+
+Council was conceived, designed, specified, tested, and iteratively improved by Satvik Kumar.
+
+The application was developed using AI-assisted workflows with Replit and Antigravity. AI tools were used to accelerate implementation, while product direction, feature selection, system design decisions, testing, debugging, and overall project ownership remained with the project author.
+
+---
+
+## 👤 Author
+
+**Satvik Kumar**
+
+Robotics & Artificial Intelligence Engineering Student  
+Odisha University of Technology and Research (OUTR)  
+
+GitHub: https://github.com/xEscapeVelocity
