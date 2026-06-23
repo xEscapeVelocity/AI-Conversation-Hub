@@ -2,7 +2,7 @@
 
 **Council.** is an open-source, serverless, multi-LLM group chat application designed to let you talk to multiple AI agents simultaneously. Have debates, get consensus, or collaborate with custom AI configurations.
 
-![Council Interface Mockup](https://raw.githubusercontent.com/xEscapeVelocity/AI-Conversation-Hub/main/client/public/favicon.svg)
+![Council Interface Mockup](client/public/favicon.svg)
 
 ---
 
