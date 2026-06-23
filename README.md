@@ -1,8 +1,6 @@
 # Council. 
 
-**Council.** is a premium, open-source, serverless group chat application designed to let you talk to multiple AI agents simultaneously. Have debates, get consensus, or collaborate with custom AI configurations in a stunning, Frutiger Aero-inspired interface.
-
-*Co-created with **Antigravity** 🌌 (Google DeepMind's agentic AI coding assistant).*
+**Council.** is an open-source, serverless, multi-LLM group chat application designed to let you talk to multiple AI agents simultaneously. Have debates, get consensus, or collaborate with custom AI configurations.
 
 ![Council Interface Mockup](https://raw.githubusercontent.com/xEscapeVelocity/AI-Conversation-Hub/main/client/public/favicon.svg)
 
@@ -13,26 +11,26 @@
 - **Consensus Group Chat:** Talk to multiple custom AI agents at the same time in one unified chat window.
 - **Privacy First (Serverless):** Your API keys, chat history, and settings are saved locally in your browser or desktop sandbox. No servers, no tracking.
 - **Frutiger Aero Glass Theme:** A gorgeous glassmorphism layout with morphing background gradient orbs, alternating glossy/matte text bubbles, and 12 vibrant accent colors.
-- **AI Presets Catalog:** Quick-apply templates for popular AI providers (Gemini, ChatGPT, Claude, OpenRouter, DeepSeek, Groq, Mistral, and local Ollama/LM Studio models).
-- **Auto-Discovery for Ollama:** Instantly scan and import your local Ollama models with a single click.
+- **AI Presets Catalog:** Quickly apply templates for popular AI providers (Gemini, ChatGPT, Claude, OpenRouter, DeepSeek, Groq, Mistral, and local Ollama/LM Studio models).
+- **Auto-Discovery for Ollama:** Instantly scan and import your local Ollama models.
 - **Credit Saver Mode:** Automatically minifies code blocks and older texts in API prompts to save your tokens.
 - **Workspace Backups:** Easily export or import your entire workspace (chats, custom configurations, and settings) in a single JSON backup.
 
 ---
 
-## 🚀 Downloads (Desktop & Mobile)
+## Downloads (Desktop & Mobile)
 
 You can download the standalone applications from the **[Releases](https://github.com/xEscapeVelocity/AI-Conversation-Hub/releases)** page:
 
-### 💻 Windows (.exe)
+### Windows (.exe)
 1. Download the latest **`Council_1.3.x_x64-setup.exe`** installer.
 2. Double-click the installer and complete the setup.
 3. Open **Council.** from your desktop or start menu and start chatting!
 
-### 📱 Android (.apk)
+### Android (.apk)
 1. Download the latest **`app-debug.apk`** package.
 2. Send it to your phone and install it (make sure to allow installation from unknown sources).
-3. Open **Council** from your launcher and start chatting!
+3. Open **Council** from your launcher.
 
 ---
 
@@ -73,13 +71,13 @@ If you'd like to run the code locally or modify it:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
 
 ---
 
-## 🔒 Security & Privacy Disclaimer
+## Security & Privacy Disclaimer
 
 **Council.** is a 100% client-side, serverless application. 
 - **Your Keys are Safe:** All API keys, settings, and chat logs are stored directly inside your browser's local sandbox (`localStorage`) or the desktop/mobile equivalent.
@@ -88,19 +86,14 @@ This project is licensed under the [MIT License](LICENSE) - see the LICENSE file
 
 ---
 
-## 🛠️ Development
+## Development
 
-Council was conceived, designed, specified, tested, and iteratively improved by Satvik Kumar.
+Council was conceived, designed, specified, tested, and iteratively improved by the author.
 
 The application was developed using AI-assisted workflows with Replit and Antigravity. AI tools were used to accelerate implementation, while product direction, feature selection, system design decisions, testing, debugging, and overall project ownership remained with the project author.
 
 ---
 
-## 👤 Author
-
-**Satvik Kumar**
-
-Robotics & Artificial Intelligence Engineering Student  
-Odisha University of Technology and Research (OUTR)  
+## Author
 
 GitHub: https://github.com/xEscapeVelocity
