@@ -6,6 +6,26 @@
 
 ---
 
+### Recommended Free & Low-Cost AI APIs
+
+Since **Council.** is completely client-side and serverless, you connect directly using your own API keys. 
+You can add **multiple agents from the same company/provider** > Try mixing and matching different system prompts for the same model. For example, you can create a "Project Manager", a "Software Architect", and a "QA Engineer" all running on separate instances of Groq Llama 3, or multiple local models side-by-side.
+
+Here are the best free-tier providers to get you started:
+
+
+| **Groq** | https://console.groq.com/
+| **OpenRouter** | https://openrouter.ai/
+| **Mistral AI** | https://console.mistral.ai/
+| **Cohere** | https://dashboard.cohere.com/
+| **Google Gemini** | https://aistudio.google.com/
+
+| **Ollama / LM Studio** | **100% Free & Local** (runs entirely on your local GPU/CPU). | Total privacy, no internet connection required, and zero rate limits. Can integrate with Council. |
+Ollama: https://ollama.com/
+LM Studio: https://lmstudio.ai/
+
+---
+
 ##  Features
 
 - **Consensus Group Chat:** Talk to multiple custom AI agents at the same time in one unified chat window.
