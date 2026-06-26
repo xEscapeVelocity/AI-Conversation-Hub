@@ -2,7 +2,7 @@
   "name": "ai-conversation-hub",
   "version": "1.0.0",
   "type": "module",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
