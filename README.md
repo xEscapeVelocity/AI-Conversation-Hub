@@ -35,6 +35,7 @@ LM Studio: https://lmstudio.ai/
 - **AI Presets Catalog:** Quickly apply templates for popular AI providers (Gemini, ChatGPT, Claude, OpenRouter, DeepSeek, Groq, Mistral, and local Ollama/LM Studio models).
 - **Auto-Discovery for Ollama:** Instantly scan and import your local Ollama models.
 - **Credit Saver Mode:** Automatically minifies code blocks and older texts in API prompts to save your tokens.
+- **Smart Rate-Limit Management:** Automatically detects rate-limited models and temporarily excludes them from chats (with a 10-minute auto-decay or manual reset) to prevent conversations from stalling.
 - **Workspace Backups:** Easily export or import your entire workspace (chats, custom configurations, and settings) in a single JSON backup.
 
 ---
