@@ -370,6 +370,18 @@
       flex-wrap: wrap;
     }
 
+    .producthunt-badge {
+      display: flex;
+      align-items: center;
+      margin-top: 0.5rem;
+      transition: transform 0.3s ease, filter 0.3s ease;
+    }
+
+    .producthunt-badge:hover {
+      transform: translateY(-2px);
+      filter: drop-shadow(0 4px 15px rgba(14, 165, 233, 0.2));
+    }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -919,6 +931,11 @@
             View Source Code
           </a>
         </div>
+        <div class="producthunt-badge">
+          <a href="https://www.producthunt.com/products/council-3?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-council-3" target="_blank" rel="noopener noreferrer">
+            <img id="ph-badge" alt="Council. - Open-source, serverless, multi-LLM group chat application | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1181896&amp;theme=dark&amp;t=1782498777497">
+          </a>
+        </div>
       </div>
       
       <!-- Interactive Mockup -->
@@ -1085,6 +1102,18 @@
   <script>
     // Theme Toggle Handler
     const themeToggle = document.getElementById('theme-toggle');
+    const phBadge = document.getElementById('ph-badge');
+
+    // Function to dynamically update Product Hunt badge theme
+    function updatePHBadgeTheme() {
+      if (!phBadge) return;
+      const isLight = document.body.classList.contains('light-theme');
+      const currentSrc = phBadge.src;
+      const newSrc = currentSrc.replace(/theme=(dark|light)/, `theme=${isLight ? 'light' : 'dark'}`);
+      if (newSrc !== currentSrc) {
+        phBadge.src = newSrc;
+      }
+    }
     
     // Check local storage or system preferences for dark mode
     const storedTheme = localStorage.getItem('theme');
@@ -1093,11 +1122,15 @@
     if (storedTheme === 'light' || (!storedTheme && !prefersDark)) {
       document.body.classList.add('light-theme');
     }
+
+    // Set initial badge theme
+    updatePHBadgeTheme();
     
     themeToggle.addEventListener('click', () => {
       document.body.classList.toggle('light-theme');
       const currentTheme = document.body.classList.contains('light-theme') ? 'light' : 'dark';
       localStorage.setItem('theme', currentTheme);
+      updatePHBadgeTheme();
     });
 
     // Chat Simulator
