@@ -29,6 +29,7 @@ LM Studio: https://lmstudio.ai/
 ##  Features
 
 - **Consensus Group Chat:** Talk to multiple custom AI agents at the same time in one unified chat window.
+- **Auto-Debate (Auto-Mode):** Send a message once and watch the AI agents discuss, debate, and collaborate with each other automatically. Turn it on or off with dedicated controls.
 - **Privacy First (Serverless):** Your API keys, chat history, and settings are saved locally in your browser or desktop sandbox. No servers, no tracking.
 - **Frutiger Aero Glass Theme:** A gorgeous glassmorphism layout with morphing background gradient orbs, alternating glossy/matte text bubbles, and 12 vibrant accent colors.
 - **AI Presets Catalog:** Quickly apply templates for popular AI providers (Gemini, ChatGPT, Claude, OpenRouter, DeepSeek, Groq, Mistral, and local Ollama/LM Studio models).
